@@ -88,22 +88,63 @@ The file `.github/workflows/build.yml` builds the release APK. You start it by h
 1. Open the tab **Actions** of your repository.
 2. Select the workflow **Build APK**.
 3. Select **Run workflow** and select the branch.
-4. To make a GitHub release, set **Publish the APK as a GitHub release** to true.
+4. Optional: enter a **version**, for example `1.2.0`. If you leave this field empty, the workflow uses the value of `avg.versionName` in `gradle.properties`.
+5. To make a GitHub release, set **Publish the APK as a GitHub release** to true.
 
 The workflow always saves the APK as a workflow artifact. It makes a release only if you set the option **publish**.
 
-| Branch | Release type |
-|---|---|
-| The default branch of the repository | Release (marked as latest). Tag: `v<version>`. |
-| Any other branch, or a tag | Pre-release. Tag: `v<version>-<branch>.<run number>`. |
+The version that you enter (or the default) is the base version. The workflow adds the branch name and the run number if the branch is not the default branch. The APK, the file name and the release tag use the same final version.
 
-The version is the value of `avg.versionName` in `gradle.properties`. Change this value before you make a new release. The release fails if the tag already exists. You can set a different tag in the field **tag**.
+| Branch | Version of the APK | Release type and tag |
+|---|---|---|
+| The default branch of the repository | `1.2.0` | Release (marked as latest). Tag: `v1.2.0`. |
+| Any other branch, or a tag | `1.2.0-<branch>.<run number>` | Pre-release. Tag: `v1.2.0-<branch>.<run number>`. |
 
-To sign the APK with your own key, add these repository secrets: `KEYSTORE_BASE64` (the keystore file, encoded with base64), `KEYSTORE_PASSWORD`, `KEY_ALIAS` and `KEY_PASSWORD`. Without these secrets, the workflow signs the APK with the debug key. Android installs this APK, but you cannot update it later with an APK that has a different key.
+The version must look like `1.2.0` or `1.2.0-beta1`. A leading `v` is removed. The `versionCode` of the APK is the run number of the workflow. After the build, the workflow reads the version from the APK with `aapt2` and stops if it is not the same as the tag. The release fails if the tag already exists. Use a new version for each release.
+
+If the repository has the four secrets of section 3.1.1, the workflow signs the APK with your key. Without these secrets, the workflow signs the APK with the debug key. Android installs this APK, but you cannot update it later with an APK that has a different key.
 
 **NOTE:** The project uses the Android Gradle Plugin 8.4.2. This version needs Gradle 8.6 or later, and it supports compile SDK 34. This is compatible with the Gradle 8.6 of the GitHub runner images. CodeQL default setup can build the project with that Gradle version.
 
 **NOTE:** The repository has no Gradle wrapper. The workflow uses Gradle 8.6 from the setup action.
+
+#### 3.1.1 Make the signing key
+
+To sign the APK with your own key, do these steps:
+
+1. Make a keystore with the Java `keytool`. Keep the file `release.jks` in a safe place. Do not add it to the repository.
+
+   ```
+   keytool -genkeypair -v -keystore release.jks -alias avg -keyalg RSA -keysize 4096 -validity 10000
+   ```
+
+   Enter a password for the keystore. Keytool then asks for the key details. If keytool asks for a separate key password, press Enter to use the keystore password.
+
+2. Encode the keystore file with base64. The result must be one line, without line breaks.
+
+   | System | Command |
+   |---|---|
+   | Linux | `base64 -w 0 release.jks > release.jks.b64` |
+   | macOS | `base64 -i release.jks -o release.jks.b64` |
+   | Windows (PowerShell) | `[Convert]::ToBase64String([IO.File]::ReadAllBytes("release.jks")) \| Set-Content -NoNewline release.jks.b64` |
+
+3. Open the repository on GitHub. Select **Settings > Secrets and variables > Actions > New repository secret**.
+4. Add these four secrets:
+
+   | Secret | Value |
+   |---|---|
+   | `KEYSTORE_BASE64` | The complete content of the file `release.jks.b64` |
+   | `KEYSTORE_PASSWORD` | The keystore password |
+   | `KEY_ALIAS` | The alias, for example `avg` |
+   | `KEY_PASSWORD` | The key password. This is the same as the keystore password if you did not set a separate key password. |
+
+   With the GitHub CLI, you can set the first secret with this command: `gh secret set KEYSTORE_BASE64 < release.jks.b64`
+
+5. Delete the file `release.jks.b64`. It contains your private key.
+
+To check the keystore, use this command: `keytool -list -v -keystore release.jks`
+
+**WARNING:** Make a backup of `release.jks` and of the passwords. If you lose them, you cannot update an installed application with a new APK. Anyone who has the keystore and the passwords can sign APKs as you.
 
 ### 3.2 Code scanning with CodeQL
 

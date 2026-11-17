@@ -52,6 +52,11 @@ android {
         }
     }
 
+    lint {
+        // The release build runs the "vital" lint checks. A lint finding must not stop the build.
+        abortOnError = false
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -42,8 +43,12 @@
                 android:value="Keeps the controller remap helper process alive while a game controller is in use" />
         </service>
 
-        <!-- Root backend (libsu RootService) -->
-        <service android:name=".service.GamepadRootService" android:exported="false" />
+        <!-- Root backend (libsu RootService). libsu RootService does not extend android.app.Service.
+             Lint reports "Instantiatable" for this reason. The warning is a false positive. -->
+        <service
+            android:name=".service.GamepadRootService"
+            android:exported="false"
+            tools:ignore="Instantiatable" />
 
         <!-- Non-root backend 2: accessibility key interception -->
         <service

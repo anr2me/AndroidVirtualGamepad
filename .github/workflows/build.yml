@@ -7,8 +7,8 @@ on:
         description: "Publish the APK as a GitHub release"
         type: boolean
         default: false
-      tag:
-        description: "Release tag (empty = automatic)"
+      version:
+        description: "Version, for example 1.2.0 (empty = avg.versionName in gradle.properties)"
         type: string
         default: ""
 
@@ -48,22 +48,35 @@ jobs:
 
       - name: Compute release metadata
         id: meta
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          VERSION=$(grep '^avg.versionName=' gradle.properties | cut -d= -f2)
-          if [ "${{ github.ref_type }}" = "branch" ] && [ "${{ github.ref_name }}" = "$DEFAULT_BRANCH" ]; then
+          VERSION="$(echo "$INPUT_VERSION" | xargs)"
+          VERSION="${VERSION#v}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep '^avg.versionName=' gradle.properties | cut -d= -f2)
+          fi
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+)*(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::The version must look like 1.2.0 or 1.2.0-beta1. The value is '$VERSION'."
+            exit 1
+          fi
+          if [ "$REF_TYPE" = "branch" ] && [ "$REF_NAME" = "$DEFAULT_BRANCH" ]; then
             PRERELEASE=false
             SUFFIX=""
           else
             PRERELEASE=true
-            SLUG=$(echo "${{ github.ref_name }}" | tr '/_' '--' | tr -cd 'A-Za-z0-9.-')
-            SUFFIX="-${SLUG}.${{ github.run_number }}"
+            SLUG=$(echo "$REF_NAME" | tr '/_' '--' | tr -cd 'A-Za-z0-9.-')
+            SUFFIX="-${SLUG}.${RUN_NUMBER}"
           fi
-          TAG="${{ inputs.tag }}"
-          if [ -z "$TAG" ]; then TAG="v${VERSION}${SUFFIX}"; fi
-          echo "version=${VERSION}${SUFFIX}" >> "$GITHUB_OUTPUT"
+          FINAL="${VERSION}${SUFFIX}"
+          # The APK versionName, the file name and the release tag all use the same value.
+          echo "version=${FINAL}" >> "$GITHUB_OUTPUT"
           echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "Version: ${VERSION}${SUFFIX}, tag: ${TAG}, pre-release: ${PRERELEASE}"
+          echo "tag=v${FINAL}" >> "$GITHUB_OUTPUT"
+          echo "Version: ${FINAL}, tag: v${FINAL}, pre-release: ${PRERELEASE}"
 
       - name: Prepare signing key
         env:
@@ -87,7 +100,20 @@ jobs:
       - name: Build release APK
         env:
           AVG_VERSION_CODE: ${{ github.run_number }}
-        run: gradle :app:assembleRelease --stacktrace
+          APP_VERSION: ${{ steps.meta.outputs.version }}
+        run: gradle :app:assembleRelease -Pavg.versionName="$APP_VERSION" --stacktrace
+
+      - name: Check the APK version
+        env:
+          APP_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          AAPT2="$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n1)"
+          BADGING="$("$AAPT2" dump badging app/build/outputs/apk/release/app-release.apk)"
+          echo "$BADGING" | grep -m1 '^package:'
+          echo "$BADGING" | grep -qF "versionName='$APP_VERSION'" || {
+            echo "::error::The versionName of the APK is not $APP_VERSION."
+            exit 1
+          }
 
       - name: Name the APK
         id: apk
