@@ -265,7 +265,12 @@ private fun PadRow(pad: Pad, ui: UiState, vm: AppViewModel) {
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton({ vm.learn(pad) }, enabled = !ui.running && ui.learning == null) { Text("Learn") }
+                // The Learn button of the control that learns stays enabled. A disabled
+                // button loses the focus, and the focus then moves to a distant button.
+                OutlinedButton(
+                    { if (ui.learning == null) vm.learn(pad) },
+                    enabled = !ui.running && (ui.learning == null || ui.learning == pad),
+                ) { Text("Learn") }
                 TextButton({ vm.clear(pad) }) { Text("Clear") }
                 if (pad.isAxis && !pad.isTrigger) TextButton({ vm.toggleInvert(pad) }) { Text("Invert") }
             }
@@ -418,7 +423,8 @@ private fun KeyboardSection(ui: UiState, vm: AppViewModel) {
                 }
             }
         }
-        Button({ vm.learnKbd() }, enabled = !ui.running && !ui.learningKbd) {
+        // This button stays enabled while it learns, so that it keeps the focus.
+        Button({ if (!ui.learningKbd) vm.learnKbd() }, enabled = !ui.running) {
             Text(if (ui.learningKbd) "Press a control on the source device..." else "Add key mapping")
         }
         if (c.outputMode == "keyboard" && c.kbdRules.isEmpty()) {
