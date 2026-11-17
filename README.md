@@ -113,7 +113,7 @@ The CodeQL default setup cannot build an Android project with its automatic buil
 2. Disable the CodeQL default setup. The default setup and a workflow file cannot operate together.
 3. Commit the workflow file. It runs on pushes and pull requests to `main` or `master`, every week, and by hand.
 
-The workflow builds the debug APK with the command `gradle clean :app:assembleDebug`. It analyzes the Kotlin/Java code (`java-kotlin`) and the native code (`c-cpp`). If you do not need the native analysis, remove `c-cpp` from the matrix. Change the branch names in the workflow if your default branch has a different name.
+The workflow builds the debug APK with the command `gradle clean :app:assembleDebug`. It analyzes the Kotlin/Java code (`java-kotlin`), the native code (`c-cpp`) and the workflow files (`actions`). If you do not need the native analysis, remove `c-cpp` from the matrix. The workflow uses the Android SDK that is already in the GitHub runner image. It does not use the action `android-actions/setup-android`, because that action fails on the current runner image (`Failed to find package 'tools'`). Change the branch names in the workflow if your default branch has a different name.
 
 To build one CPU architecture only, add `-Pavg.abis=arm64-v8a` to the Gradle command.
 

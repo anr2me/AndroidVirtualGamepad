@@ -25,24 +25,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [java-kotlin, c-cpp]
+        include:
+          - language: actions        # the workflow files of this repository
+            build-mode: none
+          - language: java-kotlin
+            build-mode: manual
+          - language: c-cpp
+            build-mode: manual
     steps:
       - name: Check out
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
+        if: matrix.build-mode == 'manual'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK and CMake
-        run: sdkmanager --install "ndk;26.3.11579264" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0"
+      - name: Install Android SDK packages
+        if: matrix.build-mode == 'manual'
+        # The GitHub runner image already contains the Android SDK (ANDROID_HOME).
+        run: |
+          SDKMANAGER="$(command -v sdkmanager || true)"
+          if [ -z "$SDKMANAGER" ]; then
+            SDKMANAGER="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n1)"
+          fi
+          echo "Using $SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --install "ndk;26.3.11579264" "cmake;3.22.1" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Set up Gradle
+        if: matrix.build-mode == 'manual'
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.6"
@@ -51,10 +65,11 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: manual
+          build-mode: ${{ matrix.build-mode }}
 
       # CodeQL must see the compiler run. Use clean and --no-daemon so that nothing comes from a cache.
       - name: Build debug APK
+        if: matrix.build-mode == 'manual'
         run: gradle clean :app:assembleDebug -Pavg.abis=arm64-v8a --no-daemon --stacktrace
 
       - name: Analyze
