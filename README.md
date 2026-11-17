@@ -105,6 +105,18 @@ To sign the APK with your own key, add these repository secrets: `KEYSTORE_BASE6
 
 **NOTE:** The repository has no Gradle wrapper. The workflow uses Gradle 8.6 from the setup action.
 
+### 3.2 Code scanning with CodeQL
+
+The CodeQL default setup cannot build an Android project with its automatic build. The build fails. Use the workflow `.github/workflows/codeql.yml`:
+
+1. Open **Settings > Code security** of your repository.
+2. Disable the CodeQL default setup. The default setup and a workflow file cannot operate together.
+3. Commit the workflow file. It runs on pushes and pull requests to `main` or `master`, every week, and by hand.
+
+The workflow builds the debug APK with the command `gradle clean :app:assembleDebug`. It analyzes the Kotlin/Java code (`java-kotlin`) and the native code (`c-cpp`). If you do not need the native analysis, remove `c-cpp` from the matrix. Change the branch names in the workflow if your default branch has a different name.
+
+To build one CPU architecture only, add `-Pavg.abis=arm64-v8a` to the Gradle command.
+
 ## 4 Installation
 
 1. Copy the APK to the device.

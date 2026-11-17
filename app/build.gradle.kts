@@ -15,7 +15,9 @@ android {
         targetSdk = 34
         versionCode = System.getenv("AVG_VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = providers.gradleProperty("avg.versionName").getOrElse("0.1.0")
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86") }
+        // Use -Pavg.abis=arm64-v8a to build one ABI only (faster CI and code scanning).
+        val abis = providers.gradleProperty("avg.abis").getOrElse("arm64-v8a,armeabi-v7a,x86_64,x86").split(",")
+        ndk { abiFilters += abis }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
     }
 
