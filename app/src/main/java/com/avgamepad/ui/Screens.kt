@@ -187,7 +187,7 @@ fun AppScreen(vm: AppViewModel) {
                     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                         Switch(ui.config.dpadAsHat, { v -> vm.edit { it.copy(dpadAsHat = v) } })
                         Spacer(Modifier.width(8.dp))
-                        Text("D-pad as hat axis (off = BTN_DPAD_*)")
+                        Text("D-pad as hat axis (off = D-pad buttons)")
                     }
                     if (ui.config.outputMode == "auto" || ui.config.outputMode == "device") {
                         Text("Existing device to use as output:", fontWeight = FontWeight.Bold)

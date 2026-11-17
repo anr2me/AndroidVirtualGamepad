@@ -6,6 +6,7 @@ import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
 import com.avgamepad.model.AxisLayout
+import com.avgamepad.model.ButtonLayout
 import com.avgamepad.model.EngineConfig
 import com.avgamepad.model.Ev
 import com.avgamepad.model.Evdev
@@ -25,6 +26,7 @@ class EvdevSink(
     private val triggerAxes: Boolean,
     private val triggerButtons: Boolean,
     val ffFd: Int = -1,           // uinput fd that receives rumble requests, -1 = none
+    private val buttons: ButtonLayout = ButtonLayout.XPAD,   // button codes of the key layout
     private val onClose: () -> Unit,
 ) : OutputSink {
     private val buf = IntArray(3 * 64)
@@ -49,7 +51,7 @@ class EvdevSink(
             dpad[p.ordinal - Pad.DPAD_UP.ordinal] = down
             return
         }
-        val c = Evdev.keyCode(p)
+        val c = Evdev.keyCode(p, buttons)
         if (c >= 0 && (keys == null || c in keys)) put(Ev.KEY, c, if (down) 1 else 0)
     }
 
@@ -59,7 +61,7 @@ class EvdevSink(
             val down = if (trig[i]) value >= 96 else value >= 128   // hysteresis
             if (down != trig[i]) {
                 trig[i] = down
-                val code = if (i == 0) Evdev.BTN_TL2 else Evdev.BTN_TR2
+                val code = Evdev.triggerKey(p, buttons)
                 if (keys == null || code in keys) put(Ev.KEY, code, if (down) 1 else 0)
             }
         }
@@ -219,8 +221,9 @@ object Sinks {
 
     private fun uinput(cfg: EngineConfig): OutputSink {
         val layout = cfg.axisLayout
-        val keyList = Pad.entries.filter { !it.isAxis }.map { Evdev.keyCode(it) }.toMutableList()
-        if (cfg.triggerButtons) { keyList += Evdev.BTN_TL2; keyList += Evdev.BTN_TR2 }
+        val buttons = cfg.buttonLayout
+        val keyList = Pad.entries.filter { !it.isAxis }.map { Evdev.keyCode(it, buttons) }.filter { it >= 0 }.toMutableList()
+        if (cfg.triggerButtons) { keyList += Evdev.triggerKey(Pad.LT, buttons); keyList += Evdev.triggerKey(Pad.RT, buttons) }
         // Axes: sticks always. Triggers only when the trigger mode includes axes.
         val axisPads = Pad.entries.filter { it.isAxis && (!it.isTrigger || cfg.triggerAxes) }
 
@@ -239,13 +242,13 @@ object Sinks {
         }
         val fd = NativeInput.uinputCreate(
             cfg.virtualName, 3 /* BUS_USB */, cfg.virtualVendor, cfg.virtualProduct, 0x0110,
-            keyList.toIntArray(), codes.toIntArray(), mins.toIntArray(), maxs.toIntArray(),
+            keyList.distinct().toIntArray(), codes.toIntArray(), mins.toIntArray(), maxs.toIntArray(),
             fuzz.toIntArray(), flat.toIntArray(), cfg.rumble != "off",
         )
         if (fd < 0) throw IOException("/dev/uinput: ${NativeInput.errName(-fd)}")
         return EvdevSink("Virtual gamepad (uinput) ${cfg.padProfile.title}", fd, layout, cfg.dpadAsHat,
             null, null, cfg.triggerAxes, cfg.triggerButtons,
-            ffFd = if (cfg.rumble != "off") fd else -1) {
+            ffFd = if (cfg.rumble != "off") fd else -1, buttons = buttons) {
             NativeInput.uinputDestroy(fd)
         }
     }
@@ -259,7 +262,7 @@ object Sinks {
         val abs = NativeInput.capabilities(fd, Ev.ABS).toSet()
         val hat = cfg.dpadAsHat && Evdev.ABS_HAT0X in abs && Evdev.ABS_HAT0Y in abs
         return EvdevSink("Existing device ${cfg.targetPath}", fd, cfg.axisLayout, hat, keys, abs,
-            cfg.triggerAxes, cfg.triggerButtons) {
+            cfg.triggerAxes, cfg.triggerButtons, buttons = cfg.buttonLayout) {
             NativeInput.closeFd(fd)
         }
     }

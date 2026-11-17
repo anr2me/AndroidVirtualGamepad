@@ -30,6 +30,30 @@ enum class Pad(val label: String, val isAxis: Boolean = false) {
     val isTrigger: Boolean get() = this == LT || this == RT
 }
 
+/**
+ * The button codes that the Android key layout (.kl file) of an identity expects.
+ * Android selects the .kl file with the vendor ID, the product ID and the version.
+ * The virtual gamepad has the version 0x0110. Android has no .kl file for this version,
+ * so it uses the file without a version, for example Vendor_054c_Product_0268.kl.
+ */
+enum class ButtonLayout {
+    /** Linux gamepad codes (BTN_SOUTH, BTN_EAST ...). Xbox 360, Generic and most other IDs. */
+    XPAD,
+    /** Vendor_054c_Product_0268.kl. The codes of the joystick range 0x120 to 0x12f. */
+    PS3,
+    /** Vendor_054c_Product_09cc.kl. BTN_SOUTH is Square. L2 and R2 are 0x136 and 0x137. */
+    PS4;
+
+    companion object {
+        fun of(vendor: Int, product: Int): ButtonLayout = when {
+            vendor != 0x054c -> ButtonLayout.XPAD
+            product == 0x0268 -> ButtonLayout.PS3
+            product == 0x09cc || product == 0x05c4 -> ButtonLayout.PS4
+            else -> ButtonLayout.XPAD
+        }
+    }
+}
+
 /** Linux evdev codes for the virtual gamepad. */
 object Evdev {
     const val ABS_RX = 3
@@ -38,7 +62,29 @@ object Evdev {
     const val ABS_HAT0X = 0x10
     const val ABS_HAT0Y = 0x11
 
-    fun keyCode(p: Pad): Int = when (p) {
+    /** The button code of a control in the key layout, or -1 if the control is an axis. */
+    fun keyCode(p: Pad, l: ButtonLayout = ButtonLayout.XPAD): Int = when (l) {
+        ButtonLayout.XPAD -> xpadKey(p)
+        ButtonLayout.PS3 -> ps3Key(p)
+        ButtonLayout.PS4 -> ps4Key(p)
+    }
+
+    /** The digital L2 or R2 button of the key layout, or -1 for any other control. */
+    fun triggerKey(p: Pad, l: ButtonLayout = ButtonLayout.XPAD): Int = when (p) {
+        Pad.LT -> when (l) {
+            ButtonLayout.XPAD -> BTN_TL2
+            ButtonLayout.PS3 -> 0x128
+            ButtonLayout.PS4 -> 0x136
+        }
+        Pad.RT -> when (l) {
+            ButtonLayout.XPAD -> BTN_TR2
+            ButtonLayout.PS3 -> 0x129
+            ButtonLayout.PS4 -> 0x137
+        }
+        else -> -1
+    }
+
+    private fun xpadKey(p: Pad): Int = when (p) {
         Pad.A -> 0x130          // BTN_SOUTH / BTN_A
         Pad.B -> 0x131          // BTN_EAST  / BTN_B
         Pad.X -> 0x133          // BTN_NORTH / BTN_X
@@ -54,6 +100,42 @@ object Evdev {
         Pad.DPAD_DOWN -> 0x221
         Pad.DPAD_LEFT -> 0x222
         Pad.DPAD_RIGHT -> 0x223
+        else -> -1
+    }
+
+    private fun ps3Key(p: Pad): Int = when (p) {
+        Pad.A -> 0x12e          // Cross
+        Pad.B -> 0x12d          // Circle
+        Pad.X -> 0x12f          // Square
+        Pad.Y -> 0x12c          // Triangle
+        Pad.L1 -> 0x12a
+        Pad.R1 -> 0x12b
+        Pad.SELECT -> 0x120
+        Pad.START -> 0x123
+        Pad.MODE -> 0x2d0       // PS button
+        Pad.THUMBL -> 0x121
+        Pad.THUMBR -> 0x122
+        Pad.DPAD_UP -> 0x124
+        Pad.DPAD_RIGHT -> 0x125
+        Pad.DPAD_DOWN -> 0x126
+        Pad.DPAD_LEFT -> 0x127
+        else -> -1
+    }
+
+    private fun ps4Key(p: Pad): Int = when (p) {
+        Pad.A -> 0x131          // Cross
+        Pad.B -> 0x132          // Circle
+        Pad.X -> 0x130          // Square
+        Pad.Y -> 0x133          // Triangle
+        Pad.L1 -> 0x134
+        Pad.R1 -> 0x135
+        Pad.SELECT -> 0x138     // Share
+        Pad.START -> 0x139      // Options
+        Pad.MODE -> 0x13c       // PS button
+        Pad.THUMBL -> 0x13a
+        Pad.THUMBR -> 0x13b
+        // The key layout has no D-pad buttons. Use the hat axis with this identity.
+        Pad.DPAD_UP, Pad.DPAD_DOWN, Pad.DPAD_LEFT, Pad.DPAD_RIGHT -> xpadKey(p)
         else -> -1
     }
 
@@ -194,6 +276,7 @@ object Presets {
 enum class AxisLayout(val title: String, val rx: Int, val ry: Int, val lt: Int, val rt: Int) {
     XBOX("Xbox style", 3, 4, 2, 5),            // right stick RX/RY, triggers Z/RZ
     PLAYSTATION("PlayStation style", 2, 5, 3, 4), // right stick Z/RZ, triggers RX/RY
+    PLAYSTATION3("PlayStation 3 style", 2, 5, 0x30, 0x31), // right stick Z/RZ, triggers 0x30/0x31
     GENERIC("Generic", 2, 5, 0x0a, 0x09),      // right stick Z/RZ, triggers BRAKE/GAS
 }
 
@@ -204,7 +287,7 @@ enum class PadProfile(
     val triggerMode: String,       // recommended L2/R2 output for this identity
 ) {
     XBOX360("Xbox 360", 0x045e, 0x028e, "Microsoft X-Box 360 pad", AxisLayout.XBOX, true, "analog"),
-    PS3("PlayStation 3", 0x054c, 0x0268, "Sony PLAYSTATION(R)3 Controller", AxisLayout.PLAYSTATION, false, "digital"),
+    PS3("PlayStation 3", 0x054c, 0x0268, "Sony PLAYSTATION(R)3 Controller", AxisLayout.PLAYSTATION3, false, "digital"),
     PS4("PlayStation 4", 0x054c, 0x09cc, "Wireless Controller", AxisLayout.PLAYSTATION, true, "both"),
     GENERIC("Generic", 0x1209, 0x0001, "Android Virtual Gamepad", AxisLayout.GENERIC, true, "analog"),
     CUSTOM("Custom", 0x045e, 0x028e, "Android Virtual Gamepad", AxisLayout.GENERIC, true, "analog"),
@@ -242,6 +325,8 @@ data class EngineConfig(
         else padProfile.axes
     val virtualVendor: Int get() = (if (custom) customVendor else padProfile.vendor) and 0xffff
     val virtualProduct: Int get() = (if (custom) customProduct else padProfile.product) and 0xffff
+    /** The button codes that the key layout of the virtual identity expects. */
+    val buttonLayout: ButtonLayout get() = ButtonLayout.of(virtualVendor, virtualProduct)
     /** Pad 2 and later get a number in the name when the name is ours (Generic, Custom). Real profile names stay as they are. */
     val virtualName: String
         get() {

@@ -266,10 +266,14 @@ Changes to the rules apply immediately when the remapper operates. Changes to th
 
 Android selects the key layout of a gamepad from its vendor ID and product ID. Applications also use the ID to show the correct button symbols. Select an identity in the section **Output**.
 
+The application sends the button codes that this key layout expects. The PlayStation 3 and PlayStation 4 identities use button codes that are different from the Xbox 360 codes.
+
+The mapping does not depend on the identity. When you select a different identity, you do not need to use **Learn** again.
+
 | Profile | ID | Name | Axes | D-pad | L2/R2 |
 |---|---|---|---|---|---|
 | Xbox 360 | `045e:028e` | Microsoft X-Box 360 pad | Right stick `ABS_RX`/`ABS_RY`, triggers `ABS_Z`/`ABS_RZ` | Hat | Analog |
-| PlayStation 3 | `054c:0268` | Sony PLAYSTATION(R)3 Controller | Right stick `ABS_Z`/`ABS_RZ` | Buttons | Digital |
+| PlayStation 3 | `054c:0268` | Sony PLAYSTATION(R)3 Controller | Right stick `ABS_Z`/`ABS_RZ`, triggers `0x30`/`0x31` | Buttons | Digital |
 | PlayStation 4 | `054c:09cc` | Wireless Controller | Right stick `ABS_Z`/`ABS_RZ`, triggers `ABS_RX`/`ABS_RY` | Hat | Both |
 | Generic | `1209:0001` | Android Virtual Gamepad | Right stick `ABS_Z`/`ABS_RZ`, triggers `ABS_BRAKE`/`ABS_GAS` | Hat | Analog |
 | Custom | You set it | You set it | You select Xbox, PlayStation or Generic axes | Setting | Setting |
@@ -282,14 +286,16 @@ In the PlayStation profiles, the Android names of the face buttons are: A = Cros
 
 **NOTE:** The key layouts that Android uses for these IDs can be different between Android versions and device makers. Use `adb shell dumpsys input` to see the device. If a button or an axis is wrong, select another axis layout in the Custom profile.
 
+**NOTE:** Android has more key layout files for some versions of the PlayStation gamepads (for example `Vendor_054c_Product_0268_Version_8111.kl`). These files use different button codes. The virtual gamepad has the version `0x0110`, so Android uses the files without a version. The application sends the codes for these files.
+
 **NOTE:** The virtual gamepad can have the same identity as a real gamepad. The application ignores a device with the identity of its own virtual gamepad when it looks for the source device.
 
 #### L2/R2 output
 
 | Setting | Description |
 |---|---|
-| Analog axes | L2 and R2 are trigger axes. The virtual gamepad has no `BTN_TL2` or `BTN_TR2` button. |
-| Digital buttons | L2 and R2 are the buttons `BTN_TL2` and `BTN_TR2`. The virtual gamepad has no trigger axes. The button is pressed at 50 percent of the trigger range. |
+| Analog axes | L2 and R2 are trigger axes. The virtual gamepad has no L2 or R2 button. |
+| Digital buttons | L2 and R2 are buttons. The identity gives the button codes (`BTN_TL2` and `BTN_TR2` for Xbox 360 and Generic). The virtual gamepad has no trigger axes. The button is pressed at 50 percent of the trigger range. |
 | Both | The virtual gamepad has trigger axes and buttons. A real PlayStation 4 gamepad does this. Some applications use both and can react two times. |
 
 **NOTE:** The key layout of Android for the Xbox 360 identity can ignore the L2/R2 buttons. For digital L2/R2, use a PlayStation profile or the Generic profile.
@@ -298,7 +304,7 @@ In the PlayStation profiles, the Android names of the face buttons are: A = Cros
 
 | Setting | Description |
 |---|---|
-| D-pad as hat axis | The D-pad uses the axes `ABS_HAT0X` and `ABS_HAT0Y`. If you disable this setting, the D-pad uses `BTN_DPAD_UP`, `BTN_DPAD_DOWN`, `BTN_DPAD_LEFT` and `BTN_DPAD_RIGHT`. |
+| D-pad as hat axis | The D-pad uses the axes `ABS_HAT0X` and `ABS_HAT0Y`. If you disable this setting, the D-pad uses buttons. The Xbox 360 and Generic identities use `BTN_DPAD_UP`, `BTN_DPAD_DOWN`, `BTN_DPAD_LEFT` and `BTN_DPAD_RIGHT`. The PlayStation 3 identity uses the codes `0x124` to `0x127`. The key layout of the PlayStation 4 identity has no D-pad buttons. Enable this setting for the PlayStation 4 identity. |
 | Grab source | The application takes sole control of the source device (`EVIOCGRAB`). The original events do not go to Android. Keep this setting enabled to prevent double input. |
 
 ### 6.4 Use more than one pad
