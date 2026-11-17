@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Android Virtual Gamepad</string>
+    <string name="accessibility_description">Reads gamepad buttons and runs Android actions such as Back and Home. This service does not read the content of the screen.</string>
+    <string name="notif_title">Android Virtual Gamepad</string>
+    <string name="notif_text">Controller remapping is active</string>
+</resources>
