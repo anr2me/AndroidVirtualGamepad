@@ -230,6 +230,8 @@ data class EngineConfig(
     val kbdRules: List<KbdRule> = emptyList(),
     val kbdMode: String = "auto",        // auto | uinput | inject
     val rumble: String = "controller",   // off | controller | phone | both
+    val autoStart: Boolean = true,       // start this pad at boot (when the boot option is on)
+    val waitForSource: Boolean = false,  // start without the source device and wait for it (boot start)
 ) {
     val padProfile: PadProfile
         get() = PadProfile.entries.firstOrNull { it.name.equals(profile, true) } ?: PadProfile.XBOX360
@@ -261,6 +263,7 @@ data class EngineConfig(
         .put("rules", JSONArray().also { a -> rules.forEach { a.put(it.toJson()) } })
         .put("kbdRules", JSONArray().also { a -> kbdRules.forEach { a.put(it.toJson()) } })
         .put("kbdMode", kbdMode).put("rumble", rumble)
+        .put("autoStart", autoStart).put("waitForSource", waitForSource)
 
     companion object {
         fun fromJson(o: JSONObject): EngineConfig {
@@ -292,6 +295,8 @@ data class EngineConfig(
                 kbdRules = kbd,
                 kbdMode = o.optString("kbdMode", d.kbdMode),
                 rumble = o.optString("rumble", d.rumble),
+                autoStart = o.optBoolean("autoStart", d.autoStart),
+                waitForSource = o.optBoolean("waitForSource", d.waitForSource),
             )
         }
     }

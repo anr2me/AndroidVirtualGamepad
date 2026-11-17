@@ -200,6 +200,37 @@ To build one CPU architecture only, add `-Pavg.abis=arm64-v8a` to the Gradle com
 
 **NOTE:** If a TV remote control sends the same key code, the service also changes the key of the remote control. Do not map the D-pad keys if you use the remote control.
 
+### 5.4 Start at boot
+
+The application can start the pads when the device starts.
+
+1. In the section **Virtual gamepads**, enable **Start pads at boot**.
+2. Select each pad that must start. Enable **Start Pad N at boot** for it. A pad needs a source device to start at boot.
+3. Restart the device to test.
+
+What happens at boot:
+
+1. Android sends the boot message to the application. The application starts its foreground service and shows its notification.
+2. The service connects to the helper process (see the table below).
+3. The service starts each pad that you selected. A pad starts even if its source device is not connected. The pad then waits, and it starts to work when the controller appears.
+4. If no pad starts, the service stops.
+
+| Mode | Requirement at boot |
+|---|---|
+| Root | The root manager must allow the application without a question. Select the option to remember the choice in the root manager. The application tries for 60 seconds. |
+| Shizuku | Shizuku must be in operation. The application waits for up to 10 minutes. It does not ask for the Shizuku permission at boot. Give the permission before you restart. |
+| Accessibility | The application does nothing. Android starts the accessibility service by itself when it is enabled in the system settings. |
+
+**NOTE:** Shizuku does not start by itself on most devices. Shizuku has its own options to start at boot. Which options are available depends on your device and on the Shizuku version. Refer to the Shizuku application.
+
+**NOTE:** The application starts after the first unlock of the device. It cannot start before the unlock.
+
+**NOTE:** Some device makers stop applications at boot, or they have an "autostart" permission. Allow autostart for the application and disable battery optimization for it.
+
+**NOTE:** The application also starts the pads again after you update the application. The update stops the helper process.
+
+**NOTE:** A pad that waits for its source device already exists as a virtual gamepad. Android lists it as a connected gamepad that sends no input.
+
 ## 6 Mapping
 
 ### 6.1 Principle
@@ -357,7 +388,7 @@ The application opens the source device for reading and writing, and it uses the
 - The application supports a maximum of four pads.
 - Accessibility mode has no pads. It supports one mapping list.
 - The helper process stops when Android stops the application. The application uses a foreground service to prevent this. Disable battery optimization for the application on devices that stop it.
-- The application does not start automatically at boot.
+- The application starts the pads at boot only in Root and Shizuku mode. The helper process must be available (see section 5.4).
 
 ## 9 Troubleshooting
 
@@ -373,6 +404,7 @@ The application opens the source device for reading and writing, and it uses the
 | The game does not rumble | The game does not use the Android vibration API, or the output is not the virtual gamepad | Use the output **Virtual gamepad**. Set **Rumble** to **Controller**, **Phone** or **Both**. |
 | The status shows `controller not supported` | The source device has no rumble, or the helper cannot write to it | Use **Phone**, or use Root mode. |
 | The on-screen keyboard does not show | The virtual keyboard is active | Select **Key injection** for the keyboard keys, or stop the pad. |
+| The pads do not start at boot | Root is not allowed without a question, Shizuku does not operate, or the device maker stopped the application | Do the steps of section 5.4. Look at the log with the tag `AVG-boot`. |
 | The remapper stops after a short time | Android stopped the application | Disable battery optimization for the application. |
 | The status shows `source lost` | The controller is disconnected | Connect the controller again. The remapper reconnects automatically. |
 

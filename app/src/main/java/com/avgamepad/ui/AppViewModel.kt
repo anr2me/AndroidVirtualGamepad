@@ -36,6 +36,7 @@ data class UiState(
     val capturing: Boolean = false,
     val editing: AccRule? = null,
     val accServiceOn: Boolean = false,
+    val bootStart: Boolean = Store.bootStart,
 ) {
     val config: EngineConfig get() = configs[slot.coerceIn(0, configs.size - 1)]
     val running: Boolean get() = slot in runningSlots
@@ -56,7 +57,7 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
     init {
         viewModelScope.launch {
             BackendManager.state.map { it.connected }.distinctUntilChanged().collect { ok ->
-                if (ok && _ui.value.backend != BackendType.ACCESSIBILITY) { refreshDevices(); probe() }
+                if (ok && _ui.value.backend != BackendType.ACCESSIBILITY) { refreshDevices(); probe(); syncStatus() }
             }
         }
         if (!BackendManager.state.value.connected) BackendManager.connect(Store.backend)
@@ -266,28 +267,47 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Reads the status of all pads from the helper. Returns the running slots. */
+    private fun applyStatus(j: String): Set<Int> {
+        val arr = JSONObject(j).getJSONArray("slots")
+        val run = HashSet<Int>()
+        val st = HashMap<Int, String>()
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            val sl = o.getInt("slot")
+            if (o.optBoolean("running")) run += sl
+            val rb = o.optString("rumble")
+            st[sl] = "${o.optString("state")} | ${o.optString("sink")} | events: ${o.optLong("events")}" +
+                if (rb.isNotEmpty() && rb != "off") " | rumble: $rb" else ""
+        }
+        _ui.update { it.copy(runningSlots = run, statuses = st) }
+        return run
+    }
+
+    /** The pads can already run (boot start). Show their state when the UI opens. */
+    private fun syncStatus() {
+        viewModelScope.launch {
+            runCatching { BackendManager.call { it.status() } }.onSuccess { j ->
+                if (applyStatus(j).isNotEmpty()) startPolling()
+            }
+        }
+    }
+
     private fun startPolling() {
         if (poller?.isActive == true) return
         poller = viewModelScope.launch {
             while (isActive) {
                 delay(1500)
                 runCatching { BackendManager.call { it.status() } }.onSuccess { j ->
-                    val arr = JSONObject(j).getJSONArray("slots")
-                    val run = HashSet<Int>()
-                    val st = HashMap<Int, String>()
-                    for (i in 0 until arr.length()) {
-                        val o = arr.getJSONObject(i)
-                        val sl = o.getInt("slot")
-                        if (o.optBoolean("running")) run += sl
-                        val rb = o.optString("rumble")
-                        st[sl] = "${o.optString("state")} | ${o.optString("sink")} | events: ${o.optLong("events")}" +
-                            if (rb.isNotEmpty() && rb != "off") " | rumble: $rb" else ""
-                    }
-                    _ui.update { it.copy(runningSlots = run, statuses = st) }
-                    if (run.isEmpty()) { app.stopService(hostIntent()); return@launch }
+                    if (applyStatus(j).isEmpty()) { app.stopService(hostIntent()); return@launch }
                 }
             }
         }
+    }
+
+    fun setBootStart(v: Boolean) {
+        Store.bootStart = v
+        _ui.update { it.copy(bootStart = v) }
     }
 
     // ---- accessibility mode ----

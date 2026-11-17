@@ -36,16 +36,20 @@ class GamepadEngine(
     fun start() {
         DeviceScanner.registerVirtual(cfg.slot, cfg.virtualName, cfg.virtualVendor, cfg.virtualProduct)
         try {
-            srcPath = DeviceScanner.resolve(cfg)
-                ?: throw IOException("Source device not found: ${cfg.sourceName.ifBlank { cfg.sourcePath }}")
-            fd = openSource(srcPath)
+            val found = DeviceScanner.resolve(cfg)
+            if (found != null) {
+                srcPath = found
+                fd = openSource(found)
+            } else if (!cfg.waitForSource) {
+                throw IOException("Source device not found: ${cfg.sourceName.ifBlank { cfg.sourcePath }}")
+            }   // else: boot start. The loop waits until the source device appears.
             if (cfg.outputMode == "keyboard") {
                 if (cfg.kbdRules.isEmpty()) throw IOException("Keyboard only mode needs at least one keyboard key mapping")
             } else {
                 sink = Sinks.create(cfg, srcPath)
             }
             if (cfg.kbdRules.isNotEmpty()) kbd = Keyboards.create(cfg)
-            if (cfg.grab) grabbed = NativeInput.grab(fd, true) == 0
+            if (cfg.grab && fd >= 0) grabbed = NativeInput.grab(fd, true) == 0
             remapper = buildRemapper(cfg)
             startRumble()
         } catch (t: Throwable) {
@@ -57,7 +61,7 @@ class GamepadEngine(
             throw t
         }
         running = true
-        state = "running"
+        state = if (fd >= 0) "running" else "waiting for source device"
         thread = Thread({ loop() }, "avg-engine-${cfg.slot}").also { it.isDaemon = true; it.start() }
     }
 
@@ -132,8 +136,19 @@ class GamepadEngine(
         val wantPhone = cfg.rumble == "phone" || cfg.rumble == "both"
         val ctl = if (wantController) controllerFd() else -1
         rumble = RumbleBridge(cfg.slot, s.ffFd, ctl, wantPhone, phoneRumble).also { it.start() }
-        rumbleState = listOfNotNull(
-            if (wantController) (if (ctl >= 0) "controller" else if (!fdWritable) "controller not writable" else "controller not supported") else null,
+        rumbleState = rumbleText(ctl)
+    }
+
+    private fun rumbleText(ctl: Int): String {
+        val wantController = cfg.rumble == "controller" || cfg.rumble == "both"
+        val wantPhone = cfg.rumble == "phone" || cfg.rumble == "both"
+        return listOfNotNull(
+            if (wantController) when {
+                ctl >= 0 -> "controller"
+                fd < 0 -> "controller (waiting for device)"
+                !fdWritable -> "controller not writable"
+                else -> "controller not supported"
+            } else null,
             if (wantPhone) "phone" else null,
         ).joinToString(", ")
     }
@@ -180,7 +195,11 @@ class GamepadEngine(
         fd = f; srcPath = p
         if (cfg.grab) grabbed = NativeInput.grab(fd, true) == 0
         remapper = buildRemapper(cfg)
-        if (rumble != null && wantsControllerRumble()) rumble?.setController(controllerFd())
+        if (rumble != null && wantsControllerRumble()) {
+            val c = controllerFd()
+            rumble?.setController(c)
+            rumbleState = rumbleText(c)
+        }
         state = "running"
     }
 }

@@ -88,6 +88,23 @@ fun AppScreen(vm: AppViewModel) {
                             enabled = ui.configs.size > 1 && (ui.configs.size - 1) !in ui.runningSlots,
                         ) { Text("Remove last pad") }
                     }
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Switch(ui.bootStart, vm::setBootStart)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Start pads at boot")
+                    }
+                    if (ui.bootStart) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Switch(ui.config.autoStart, { v -> vm.edit { it.copy(autoStart = v) } })
+                            Spacer(Modifier.width(8.dp))
+                            Text("Start Pad ${ui.slot + 1} at boot")
+                        }
+                        Text(
+                            "At boot, Root must be allowed for this app, or Shizuku must be running. " +
+                                "The pad waits for the source device if it is not connected.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                     Text("The settings below belong to Pad ${ui.slot + 1}.", style = MaterialTheme.typography.bodySmall)
                     Text(if (ui.status.isNotBlank()) ui.status else if (ui.running) "Running" else "Stopped")
                     if (ui.log.isNotBlank()) Text(ui.log, style = MaterialTheme.typography.bodySmall)
@@ -267,6 +284,10 @@ private fun AccessibilitySection(ui: UiState, vm: AppViewModel) {
             style = MaterialTheme.typography.bodySmall,
         )
         Text(if (ui.accServiceOn) "Service status: enabled" else "Service status: disabled")
+        Text(
+            "Android starts the accessibility service at boot when it is enabled in the system settings.",
+            style = MaterialTheme.typography.bodySmall,
+        )
         OutlinedButton({
             runCatching {
                 ctx.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

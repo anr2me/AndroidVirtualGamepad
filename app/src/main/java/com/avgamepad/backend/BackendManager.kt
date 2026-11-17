@@ -73,8 +73,21 @@ object BackendManager {
         else _state.value = BackendState(current, false, "Shizuku permission denied.")
     }
 
-    fun connect(type: BackendType) {
-        disconnect()
+    fun connect(type: BackendType) = onMain { connectNow(type) }
+    fun disconnect() = onMain { disconnectNow() }
+
+    /** RootService.bind and unbind must run on the main thread. */
+    private fun onMain(block: () -> Unit) {
+        if (Looper.myLooper() == Looper.getMainLooper()) block() else main.post(block)
+    }
+
+    /** null = Shizuku is not running, true = running and permission granted, false = permission missing. */
+    fun shizukuPermission(): Boolean? = try {
+        if (!Shizuku.pingBinder()) null else Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+    } catch (_: Throwable) { null }
+
+    private fun connectNow(type: BackendType) {
+        disconnectNow()
         current = type
         when (type) {
             BackendType.ROOT -> connectRoot()
@@ -84,7 +97,7 @@ object BackendManager {
         }
     }
 
-    fun disconnect() {
+    private fun disconnectNow() {
         service = null
         runCatching { RootService.unbind(conn) }
         shizukuArgs?.let { runCatching { Shizuku.unbindUserService(it, conn, true) } }

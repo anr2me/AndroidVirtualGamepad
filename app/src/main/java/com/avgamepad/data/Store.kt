@@ -28,6 +28,11 @@ object Store {
         get() = sp.getBoolean("accEnabled", true)
         set(v) { sp.edit().putBoolean("accEnabled", v).apply() }
 
+    /** Start the pads that are marked for boot start when the device starts. */
+    var bootStart: Boolean
+        get() = sp.getBoolean("bootStart", false)
+        set(v) { sp.edit().putBoolean("bootStart", v).apply() }
+
     var slotCount: Int
         get() = sp.getInt("slotCount", 1).coerceIn(1, MAX_SLOTS)
         set(v) { sp.edit().putInt("slotCount", v.coerceIn(1, MAX_SLOTS)).apply() }
