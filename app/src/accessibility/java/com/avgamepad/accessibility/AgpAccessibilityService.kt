@@ -14,16 +14,21 @@ import com.avgamepad.model.AccRule
  * Non-root fallback. The system gives this service the key events of gamepads.
  * Android does not let an accessibility service create gamepad events.
  * This service can only run Android actions (Back, Home, taps) and block keys.
+ * The default build does not have this file (see the Gradle property avg.accessibility).
  */
 class AgpAccessibilityService : AccessibilityService() {
     companion object {
         @Volatile var instance: AgpAccessibilityService? = null
     }
 
-    override fun onServiceConnected() { instance = this }
+    override fun onServiceConnected() {
+        instance = this
+        AccessibilityState.connected = true
+    }
 
     override fun onUnbind(intent: Intent?): Boolean {
         instance = null
+        AccessibilityState.connected = false
         return super.onUnbind(intent)
     }
 

@@ -2,6 +2,7 @@ package com.avgamepad.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.avgamepad.accessibility.AccessibilityState
 import com.avgamepad.model.AccRule
 import com.avgamepad.model.BackendType
 import com.avgamepad.model.EngineConfig
@@ -21,7 +22,11 @@ object Store {
     }
 
     var backend: BackendType
-        get() = runCatching { BackendType.valueOf(sp.getString("backend", "")!!) }.getOrDefault(BackendType.SHIZUKU)
+        get() {
+            val b = runCatching { BackendType.valueOf(sp.getString("backend", "")!!) }.getOrDefault(BackendType.SHIZUKU)
+            // A build without the accessibility service has no Accessibility mode.
+            return if (b == BackendType.ACCESSIBILITY && !AccessibilityState.available) BackendType.SHIZUKU else b
+        }
         set(v) { sp.edit().putString("backend", v.name).apply() }
 
     var accEnabled: Boolean

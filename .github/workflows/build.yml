@@ -11,6 +11,10 @@ on:
         description: "Version, for example 1.2.0 (empty = avg.versionName in gradle.properties)"
         type: string
         default: ""
+      accessibility:
+        description: "Add Accessibility mode (Google Play Protect can block an APK that has it)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -101,7 +105,8 @@ jobs:
         env:
           AVG_VERSION_CODE: ${{ github.run_number }}
           APP_VERSION: ${{ steps.meta.outputs.version }}
-        run: gradle :app:assembleRelease -Pavg.versionName="$APP_VERSION" --stacktrace
+          ACCESSIBILITY: ${{ inputs.accessibility }}
+        run: gradle :app:assembleRelease -Pavg.versionName="$APP_VERSION" -Pavg.accessibility="$ACCESSIBILITY" --stacktrace
 
       - name: Check the APK version
         env:
@@ -117,8 +122,12 @@ jobs:
 
       - name: Name the APK
         id: apk
+        env:
+          ACCESSIBILITY: ${{ inputs.accessibility }}
         run: |
-          NAME="AndroidVirtualGamepad-${{ steps.meta.outputs.version }}.apk"
+          SUFFIX=""
+          if [ "$ACCESSIBILITY" = "true" ]; then SUFFIX="-accessibility"; fi
+          NAME="AndroidVirtualGamepad-${{ steps.meta.outputs.version }}${SUFFIX}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$NAME"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
 

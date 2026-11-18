@@ -68,9 +68,10 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
 
       # CodeQL must see the compiler run. Use clean and --no-daemon so that nothing comes from a cache.
+      # The option avg.accessibility adds the accessibility service, so that CodeQL analyzes it too.
       - name: Build debug APK
         if: matrix.build-mode == 'manual'
-        run: gradle clean :app:assembleDebug -Pavg.abis=arm64-v8a --no-daemon --stacktrace
+        run: gradle clean :app:assembleDebug -Pavg.abis=arm64-v8a -Pavg.accessibility=true --no-daemon --stacktrace
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3

@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.avgamepad.accessibility.AccessibilityState
 import com.avgamepad.backend.BackendManager
 import com.avgamepad.data.Store
 import com.avgamepad.model.*
@@ -46,7 +47,9 @@ fun AppScreen(vm: AppViewModel) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val be by BackendManager.state.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
-    LaunchedEffect(Unit) { while (true) { vm.checkAcc(); delay(1000) } }
+    if (AccessibilityState.available) {
+        LaunchedEffect(Unit) { while (true) { vm.checkAcc(); delay(1000) } }
+    }
 
     LazyColumn(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
@@ -58,7 +61,7 @@ fun AppScreen(vm: AppViewModel) {
         item {
             Section("Access mode") {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    BackendType.entries.forEach { t ->
+                    BackendType.entries.filter { it != BackendType.ACCESSIBILITY || AccessibilityState.available }.forEach { t ->
                         FilterChip(selected = ui.backend == t, onClick = { vm.setBackend(t) }, label = { Text(t.title) })
                     }
                 }
