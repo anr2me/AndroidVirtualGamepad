@@ -110,6 +110,16 @@ object Diagnostics {
     }
 
     // logcat -v time: "11-18 20:24:18.083 W/ShizukuServiceStarter(12850): text"
+    // Lines that the vendor framework writes when a process starts. They hide the useful lines.
+    private val noiseTags = setOf(
+        "TranWindowConfigurationImpl", "TranAssetManagerImpl", "TranInstanceHelper", "MtkSystemServiceRegistry",
+        "SystemServiceRegistry", "AssetManager", "OverlayConfig", "FeatureFlagsImplExport", "LoadedApk",
+        "Choreographer", "PhoneWindow", "WindowOnBackDispatcher",
+    )
+
+    private fun isNoise(tag: String, text: String) =
+        tag in noiseTags || (tag == "libc" && text.startsWith("Access denied finding property"))
+
     private val lineRe = Regex("""^\d\d-\d\d \d\d:\d\d:\d\d\.\d{3} ([VDIWEFA])/(.+?)\(\s*(\d+)\): ?(.*)$""")
 
     /**
@@ -132,7 +142,7 @@ object Diagnostics {
             if (own) pids += m.groupValues[3].toInt()
         }
         return parsed.filter { (_, m) ->
-            m != null && (
+            m != null && !isNoise(m.groupValues[2], m.groupValues[4]) && (
                 m.groupValues[3].toInt() in pids ||
                     m.groupValues[2].startsWith("AVG") ||
                     (m.groupValues[2] == "UserServiceManager" && m.groupValues[4].contains(id))
