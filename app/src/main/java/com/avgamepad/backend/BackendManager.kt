@@ -15,10 +15,14 @@ import com.avgamepad.service.GamepadRootService
 import com.avgamepad.service.ShizukuUserService
 import com.topjohnwu.superuser.Shell
 import com.topjohnwu.superuser.ipc.RootService
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
@@ -32,6 +36,7 @@ data class BackendState(
 object BackendManager {
     private lateinit var app: Application
     private val main = Handler(Looper.getMainLooper())
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _state = MutableStateFlow(BackendState())
     val state: StateFlow<BackendState> = _state.asStateFlow()
 
@@ -48,7 +53,7 @@ object BackendManager {
         if (service == null && current == BackendType.SHIZUKU) {
             _state.value = BackendState(
                 BackendType.SHIZUKU, false,
-                "Shizuku helper did not start. Look at the log with the tag ShizukuServiceStarter.",
+                "Shizuku helper did not start. Select Diagnostics to see the log.",
             )
         }
     }
@@ -56,6 +61,7 @@ object BackendManager {
     fun init(application: Application) {
         app = application
         PhoneRumble.init(application)
+        _state.onEach { Diagnostics.record(it.message) }.launchIn(scope)
         Shizuku.addRequestPermissionResultListener(permListener)
     }
 

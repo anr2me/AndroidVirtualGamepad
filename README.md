@@ -429,31 +429,15 @@ The application opens the source device for reading and writing, and it uses the
 | The game does not rumble | The game does not use the Android vibration API, or the output is not the virtual gamepad | Use the output **Virtual gamepad**. Set **Rumble** to **Controller**, **Phone** or **Both**. |
 | The status shows `controller not supported` | The source device has no rumble, or the helper cannot write to it | Use **Phone**, or use Root mode. |
 | The on-screen keyboard does not show | The virtual keyboard is active | Select **Key injection** for the keyboard keys, or stop the pad. |
-| The message stays on `Starting Shizuku helper...`, or says `Shizuku helper did not start` | The helper process stopped before it connected to the application | Select **Reconnect**. If the message stays, read the log of the helper (see section 9.1). |
+| The message stays on `Starting Shizuku helper...`, or says `Shizuku helper did not start` | The helper process stopped before it connected to the application | Select **Reconnect**. If the message stays, select **Diagnostics**. Look for the lines with the tag `ShizukuServiceStarter`. |
 | The pads do not start at boot | Root is not allowed without a question, Shizuku does not operate, or the device maker stopped the application | Do the steps of section 5.4. Look at the log with the tag `AVG-boot`. |
 | The remapper stops after a short time | Android stopped the application | Disable battery optimization for the application. |
 | The status shows `source lost` | The controller is disconnected | Connect the controller again. The remapper reconnects automatically. |
 | Google Play Protect blocks the installation | The APK has an accessibility service | Use the default build. It has no accessibility service. |
 
-### 9.1 Read the log of the Shizuku helper
+To see the log of the application and of its helper process, select **Diagnostics** in the section **Access mode**. Select **Copy** or **Share** to send the text.
 
-Use this procedure if the Shizuku helper does not start. You do not need a computer. You use the terminal application Termux and the tool `rish` of Shizuku.
-
-1. Start Shizuku.
-2. In the Shizuku application, select **Use Shizuku in terminal apps**.
-3. Select **Export files**. Save the files `rish` and `rish_shizuku.dex`.
-4. Open Termux. Do not use a proot shell, for example Debian.
-5. Copy the two files to the home folder of Termux: `cp ~/storage/downloads/rish* ~/`
-6. Set the file permissions: `chmod +x ~/rish; chmod 400 ~/rish_shizuku.dex`
-7. Set the application ID: `export RISH_APPLICATION_ID=com.termux`
-8. Clear the log: `./rish -c "logcat -c"`
-9. Allow Termux when Shizuku asks for permission.
-10. In **Android Virtual Gamepad**, select **Reconnect**. Wait 15 seconds.
-11. In Termux, show the log: `./rish -c "logcat -d" | grep -iE "ShizukuServiceStarter|avg_helper|AndroidRuntime"`
-
-The lines with the tag `ShizukuServiceStarter` show why the helper stopped.
-
-**NOTE:** On Android 14 and later, `rish` does not operate if the file `rish_shizuku.dex` is in shared storage or has write permission. Keep the file in the home folder of Termux and set `chmod 400`.
+The window shows only the lines of this application. The log of the helper process needs Shizuku or Root. Without them, the window shows only the connection history and the lines of the UI process.
 
 ## 10 Project structure
 
@@ -465,7 +449,7 @@ app/src/main/
     model/               Controls, rules, configuration, presets
     engine/              Remapper, gamepad and keyboard sinks, rumble bridge, device scanner, event loop
     service/             Helper implementation, Shizuku and root wrappers
-    backend/             Connection to the helper (root or Shizuku)
+    backend/             Connection to the helper (root or Shizuku), diagnostics
     accessibility/       State of the accessibility service
     ui/                  Compose screens (phone and TV), pad selection
     data/                Saved settings (one configuration for each pad)

@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.avgamepad.accessibility.AccessibilityState
 import com.avgamepad.backend.BackendManager
+import com.avgamepad.backend.Diagnostics
 import com.avgamepad.data.Store
 import com.avgamepad.model.*
 import com.avgamepad.service.HostService
@@ -37,6 +38,9 @@ data class UiState(
     val editing: AccRule? = null,
     val accServiceOn: Boolean = false,
     val bootStart: Boolean = Store.bootStart,
+    val diagOpen: Boolean = false,
+    val diagBusy: Boolean = false,
+    val diagText: String = "",
 ) {
     val config: EngineConfig get() = configs[slot.coerceIn(0, configs.size - 1)]
     val running: Boolean get() = slot in runningSlots
@@ -78,6 +82,23 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     fun reconnect() = BackendManager.connect(_ui.value.backend)
+
+    // ---- diagnostics ----
+    fun openDiagnostics() {
+        _ui.update { it.copy(diagOpen = true) }
+        refreshDiagnostics()
+    }
+
+    fun closeDiagnostics() = _ui.update { it.copy(diagOpen = false) }
+
+    fun refreshDiagnostics() {
+        if (_ui.value.diagBusy) return
+        _ui.update { it.copy(diagBusy = true) }
+        viewModelScope.launch {
+            val text = runCatching { Diagnostics.report() }.getOrElse { "Diagnostics failed: ${it.message}" }
+            _ui.update { it.copy(diagText = text, diagBusy = false) }
+        }
+    }
 
     fun refreshDevices() {
         viewModelScope.launch {

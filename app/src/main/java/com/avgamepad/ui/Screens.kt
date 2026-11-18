@@ -69,7 +69,10 @@ fun AppScreen(vm: AppViewModel) {
                 }
                 Text(be.message, style = MaterialTheme.typography.bodyMedium)
                 if (ui.probe.isNotBlank()) Text(ui.probe, style = MaterialTheme.typography.bodySmall)
-                OutlinedButton(onClick = vm::reconnect) { Text("Reconnect") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = vm::reconnect) { Text("Reconnect") }
+                    OutlinedButton(onClick = vm::openDiagnostics) { Text("Diagnostics") }
+                }
             }
         }
 
@@ -219,6 +222,7 @@ fun AppScreen(vm: AppViewModel) {
 
     ui.editing?.let { AccDialog(it, vm) }
     if (ui.kbdPendingSrc != null || ui.kbdEditIndex != null) KeyPickerDialog(vm)
+    if (ui.diagOpen) DiagnosticsDialog(ui, vm)
 }
 
 @Composable
