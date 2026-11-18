@@ -41,6 +41,18 @@ object BackendManager {
     private var shizukuArgs: Shizuku.UserServiceArgs? = null
     private const val REQ_SHIZUKU = 4711
 
+    /** Time in milliseconds that the Shizuku helper has to connect. */
+    private const val HELPER_TIMEOUT_MS = 10_000L
+
+    private val helperTimeout = Runnable {
+        if (service == null && current == BackendType.SHIZUKU) {
+            _state.value = BackendState(
+                BackendType.SHIZUKU, false,
+                "Shizuku helper did not start. Look at the log with the tag ShizukuServiceStarter.",
+            )
+        }
+    }
+
     fun init(application: Application) {
         app = application
         PhoneRumble.init(application)
@@ -49,6 +61,7 @@ object BackendManager {
 
     private val conn = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            main.removeCallbacks(helperTimeout)
             val s = IGamepadService.Stub.asInterface(binder)
             try {
                 s.init(app.applicationInfo.nativeLibraryDir)
@@ -63,8 +76,21 @@ object BackendManager {
         }
 
         override fun onServiceDisconnected(name: ComponentName) {
+            main.removeCallbacks(helperTimeout)
             service = null
             _state.value = BackendState(current, false, "Helper disconnected.")
+        }
+
+        override fun onBindingDied(name: ComponentName) {
+            main.removeCallbacks(helperTimeout)
+            service = null
+            _state.value = BackendState(current, false, "Helper process died.")
+        }
+
+        override fun onNullBinding(name: ComponentName) {
+            main.removeCallbacks(helperTimeout)
+            service = null
+            _state.value = BackendState(current, false, "Helper did not give a binder.")
         }
     }
 
@@ -98,6 +124,7 @@ object BackendManager {
     }
 
     private fun disconnectNow() {
+        main.removeCallbacks(helperTimeout)
         service = null
         runCatching { RootService.unbind(conn) }
         shizukuArgs?.let { runCatching { Shizuku.unbindUserService(it, conn, true) } }
@@ -148,6 +175,8 @@ object BackendManager {
             .version(BuildConfig.VERSION_CODE)
         shizukuArgs = args
         Shizuku.bindUserService(args, conn)
+        main.removeCallbacks(helperTimeout)
+        main.postDelayed(helperTimeout, HELPER_TIMEOUT_MS)
     }
 
     /** Runs a binder call off the main thread. */
