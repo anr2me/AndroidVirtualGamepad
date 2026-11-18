@@ -31,13 +31,13 @@ A pad is one virtual gamepad. Each pad has its own source device, mapping, ident
 
 ### 1.4 Access modes
 
-An Android application cannot read `/dev/input` or write to `/dev/uinput` without more permission. The application has three access modes.
+An Android application cannot read `/dev/input` or write to `/dev/uinput` without more permission. The application has two access modes. A third mode, Accessibility, is optional. The default build does not have it (see section 3.3).
 
 | Mode | Requirement | Read `/dev/input` | Virtual gamepad | Existing device | Key injection |
 |---|---|---|---|---|---|
 | Root | A root manager (`su`) | Yes | Yes | Yes | Yes |
 | Shizuku | Shizuku is in operation | Yes | Depends on the device (note 1) | Depends on the device (note 1) | Yes |
-| Accessibility | None | No | No | No | No (note 2) |
+| Accessibility (optional) | None | No | No | No | No (note 2) |
 
 Keyboard keys and rumble need Root or Shizuku mode. Accessibility mode does not support them.
 
@@ -64,7 +64,7 @@ The helper process contains the complete event loop. The loop has low latency be
 - One of these:
   - A rooted device.
   - [Shizuku](https://shizuku.rikka.app/) in operation (Android 11 or later: wireless debugging. Other versions: ADB).
-  - Neither of these (Accessibility mode, limited function).
+  - Neither of these (Accessibility mode, limited function). This mode needs a special build (see section 3.3).
 - To build the project: Android Studio (Jellyfish or later), JDK 17, Android SDK 34, Android NDK 26.3.11579264 and CMake 3.22.1. Install the NDK and CMake with the SDK Manager.
 
 ## 3 Build
@@ -90,6 +90,7 @@ The file `.github/workflows/build.yml` builds the release APK. You start it by h
 3. Select **Run workflow** and select the branch.
 4. Optional: enter a **version**, for example `1.2.0`. If you leave this field empty, the workflow uses the value of `avg.versionName` in `gradle.properties`.
 5. To make a GitHub release, set **Publish the APK as a GitHub release** to true.
+6. To add Accessibility mode, set **Add Accessibility mode** to true (see section 3.3).
 
 The workflow always saves the APK as a workflow artifact. It makes a release only if you set the option **publish**.
 
@@ -158,6 +159,22 @@ The workflow builds the debug APK with the command `gradle clean :app:assembleDe
 
 To build one CPU architecture only, add `-Pavg.abis=arm64-v8a` to the Gradle command.
 
+### 3.3 Accessibility mode (optional)
+
+The default build does not have Accessibility mode. The APK has no accessibility service. Google Play Protect can block the installation of an APK that declares an accessibility service. The message says that the application can request access to sensitive data.
+
+To add Accessibility mode, set the Gradle property `avg.accessibility` to `true`:
+
+```
+./gradlew assembleDebug -Pavg.accessibility=true
+```
+
+The build then adds the files in `app/src/accessibility/` to the application. These files are the service, its manifest entry and its resources.
+
+In the GitHub workflow **Build APK**, set **Add Accessibility mode** to true. The name of the APK file then ends with `-accessibility`. The CodeQL workflow always builds with this option, so CodeQL also analyzes the service.
+
+**NOTE:** The tag of a release does not have the suffix `-accessibility`. Use a different version when you publish the two kinds of APK.
+
 ## 4 Installation
 
 1. Copy the APK to the device.
@@ -189,6 +206,8 @@ To build one CPU architecture only, add `-Pavg.abis=arm64-v8a` to the Gradle com
 7. Do steps 6 to 8 of section 5.1.
 
 ### 5.3 Accessibility mode
+
+This mode is only in a build that you make with `avg.accessibility=true` (see section 3.3). The default build does not have it.
 
 1. In the section **Access mode**, select **Accessibility**.
 2. Select **Open accessibility settings**.
@@ -413,6 +432,7 @@ The application opens the source device for reading and writing, and it uses the
 | The pads do not start at boot | Root is not allowed without a question, Shizuku does not operate, or the device maker stopped the application | Do the steps of section 5.4. Look at the log with the tag `AVG-boot`. |
 | The remapper stops after a short time | Android stopped the application | Disable battery optimization for the application. |
 | The status shows `source lost` | The controller is disconnected | Connect the controller again. The remapper reconnects automatically. |
+| Google Play Protect blocks the installation | The APK has an accessibility service | Use the default build. It has no accessibility service. |
 
 ## 10 Project structure
 
@@ -425,16 +445,17 @@ app/src/main/
     engine/              Remapper, gamepad and keyboard sinks, rumble bridge, device scanner, event loop
     service/             Helper implementation, Shizuku and root wrappers
     backend/             Connection to the helper (root or Shizuku)
-    accessibility/       Accessibility service (non-root fallback)
+    accessibility/       State of the accessibility service
     ui/                  Compose screens (phone and TV), pad selection
     data/                Saved settings (one configuration for each pad)
+app/src/accessibility/   Optional: accessibility service, its manifest entry and its resources
 ```
 
 ## 11 Security
 
 **WARNING:** The helper process has root or shell permission. Install the application only from a source that you trust.
 
-The accessibility service reads only key events of gamepads. It does not read the content of the screen.
+In a build with Accessibility mode, the accessibility service reads only key events of gamepads. It does not read the content of the screen.
 
 ## 12 Licence
 

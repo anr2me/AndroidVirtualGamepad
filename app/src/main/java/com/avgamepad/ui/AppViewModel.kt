@@ -5,7 +5,7 @@ import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.avgamepad.accessibility.AgpAccessibilityService
+import com.avgamepad.accessibility.AccessibilityState
 import com.avgamepad.backend.BackendManager
 import com.avgamepad.data.Store
 import com.avgamepad.model.*
@@ -311,7 +311,7 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     // ---- accessibility mode ----
-    fun checkAcc() = _ui.update { it.copy(accServiceOn = AgpAccessibilityService.instance != null) }
+    fun checkAcc() = _ui.update { it.copy(accServiceOn = AccessibilityState.connected) }
 
     fun setAccEnabled(v: Boolean) {
         Store.accEnabled = v

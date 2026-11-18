@@ -4,6 +4,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+// The default build has no accessibility service. Google Play Protect can block the installation of a
+// sideloaded APK that declares an accessibility service. Use -Pavg.accessibility=true to add the service
+// (Accessibility mode). The files of the service are in app/src/accessibility.
+val withAccessibility = providers.gradleProperty("avg.accessibility").map { it.toBoolean() }.getOrElse(false)
+
 android {
     namespace = "com.avgamepad"
     compileSdk = 34
@@ -19,6 +24,8 @@ android {
         val abis = providers.gradleProperty("avg.abis").getOrElse("arm64-v8a,armeabi-v7a,x86_64,x86").split(",")
         ndk { abiFilters += abis }
         externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
+        // The UI uses this value to show or hide Accessibility mode.
+        buildConfigField("boolean", "ACCESSIBILITY", withAccessibility.toString())
     }
 
     buildFeatures {
@@ -37,6 +44,19 @@ android {
     // The privileged helper process loads libagp.so from the app lib directory.
     // The library must exist as a real file on disk.
     packaging { jniLibs { useLegacyPackaging = true } }
+
+    // Accessibility mode (optional). The manifest of a build type is merged into the main manifest.
+    sourceSets {
+        if (withAccessibility) {
+            listOf("debug", "release").forEach { type ->
+                getByName(type) {
+                    manifest.srcFile("src/accessibility/AndroidManifest.xml")
+                    res.srcDir("src/accessibility/res")
+                    java.srcDir("src/accessibility/java")
+                }
+            }
+        }
+    }
 
     // Release signing comes from environment variables (set by the GitHub workflow).
     // Without a keystore, the release APK uses the debug key. It is installable but not a trusted release key.
