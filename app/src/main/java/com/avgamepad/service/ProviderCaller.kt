@@ -1,8 +1,10 @@
 package com.avgamepad.service
 
 import android.os.Binder
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import java.lang.reflect.Method
 
 /**
  * Calls a ContentProvider of the application from a shell process.
@@ -14,24 +16,30 @@ internal object ProviderCaller {
 
     fun call(authority: String, userId: Int, method: String, extras: Bundle): Bundle? {
         val provider = getProvider(authority, userId)
-        val call = Class.forName("android.content.IContentProvider").methods.first { it.name == "call" }
-        val t = call.parameterTypes
+        // On Android 12 and later, IContentProvider has more than one "call" method. The old ones
+        // are default methods that give the authority "unknown" to the provider, and the provider
+        // refuses it. Select the method that has the signature of this Android version.
+        val calls = Class.forName("android.content.IContentProvider").methods.filter { it.name == "call" }
+        val sdk = Build.VERSION.SDK_INT
         val result = when {
-            // Android 9 and earlier
-            t.size == 4 -> call.invoke(provider, CALLER, method, null, extras)
-            // Android 10
-            t.size == 5 && t[0] == String::class.java ->
-                call.invoke(provider, CALLER, authority, method, null, extras)
-            // Android 11
-            t.size == 6 -> call.invoke(provider, CALLER, null, authority, method, null, extras)
-            // Android 12 and later
-            t.size == 5 -> call.invoke(provider, attributionSource(), authority, method, null, extras)
-            else -> throw UnsupportedOperationException(
-                "IContentProvider.call has an unknown signature: " + t.joinToString { it.simpleName }
-            )
+            sdk >= 31 -> find(calls, 5, "android.content.AttributionSource")
+                .invoke(provider, attributionSource(), authority, method, null, extras)
+            sdk == 30 -> find(calls, 6, "java.lang.String")
+                .invoke(provider, CALLER, null, authority, method, null, extras)
+            sdk == 29 -> find(calls, 5, "java.lang.String")
+                .invoke(provider, CALLER, authority, method, null, extras)
+            else -> find(calls, 4, "java.lang.String")
+                .invoke(provider, CALLER, method, null, extras)
         }
         return result as Bundle?
     }
+
+    private fun find(calls: List<Method>, size: Int, first: String): Method =
+        calls.firstOrNull { it.parameterTypes.size == size && it.parameterTypes[0].name == first }
+            ?: throw UnsupportedOperationException(
+                "IContentProvider.call has no method with $size parameters that starts with $first. Found: " +
+                    calls.joinToString { m -> m.parameterTypes.joinToString(prefix = "(", postfix = ")") { it.simpleName } }
+            )
 
     private fun getProvider(authority: String, userId: Int): Any {
         val binder = Class.forName("android.os.ServiceManager")
