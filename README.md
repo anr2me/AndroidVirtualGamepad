@@ -205,6 +205,8 @@ In the GitHub workflow **Build APK**, set **Add Accessibility mode** to true. Th
 6. Read the line that starts with **Helper uid**. It tells you which outputs are available.
 7. Do steps 6 to 8 of section 5.1.
 
+**NOTE:** On some devices, the Shizuku user service does not start. This occurs on some MediaTek and Transsion devices with Android 15. The application then starts the helper process directly through Shizuku. The first connection can take 10 seconds longer. The application remembers the start method that operates.
+
 ### 5.3 Accessibility mode
 
 This mode is only in a build that you make with `avg.accessibility=true` (see section 3.3). The default build does not have it.
@@ -408,6 +410,7 @@ The application opens the source device for reading and writing, and it uses the
 - Key injection sends events from a virtual keyboard device. Some games ignore these events. Use the virtual gamepad output for these games.
 - A virtual keyboard can hide the on-screen keyboard.
 - Key injection uses hidden Android APIs. A new Android version can break it.
+- The direct start of the helper process in Shizuku mode uses hidden Android APIs too. A new Android version can break it.
 - Rumble does not support the effects of other types than rumble. Android sends rumble effects only.
 - The application does not support motion sensors or touchpads.
 - The application supports a maximum of four pads.

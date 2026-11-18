@@ -99,13 +99,7 @@ object Diagnostics {
      * Shizuku.newProcess is private since Shizuku API 13. It starts a command as the shell user.
      * This does not use the user service, so it also works when the helper does not start.
      */
-    private fun viaShizuku(cmd: Array<String>): List<String> {
-        val m = Shizuku::class.java.getDeclaredMethod(
-            "newProcess", Array<String>::class.java, Array<String>::class.java, String::class.java,
-        )
-        m.isAccessible = true
-        return readAll(m.invoke(null, cmd, null, null) as Process)
-    }
+    private fun viaShizuku(cmd: Array<String>): List<String> = readAll(ShizukuShell.newProcess(cmd))
 
     private fun viaLocal(cmd: Array<String>): List<String> = readAll(Runtime.getRuntime().exec(cmd))
 

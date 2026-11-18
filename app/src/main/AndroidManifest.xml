@@ -76,5 +76,12 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- The helper that the application starts directly through Shizuku gives its binder
+             to the application here. Only the shell user and root can call it. -->
+        <provider
+            android:name=".service.HelperProvider"
+            android:authorities="${applicationId}.helper"
+            android:exported="true" />
     </application>
 </manifest>
