@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -111,11 +113,7 @@ fun AppScreen(vm: AppViewModel) {
                     Text("The settings below belong to Pad ${ui.slot + 1}.", style = MaterialTheme.typography.bodySmall)
                     Text(if (ui.status.isNotBlank()) ui.status else if (ui.running) "Running" else "Stopped")
                     if (ui.log.isNotBlank()) Text(ui.log, style = MaterialTheme.typography.bodySmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = vm::start, enabled = !ui.running && be.connected) { Text("Start pad ${ui.slot + 1}") }
-                        OutlinedButton(onClick = vm::stop, enabled = ui.running) { Text("Stop") }
-                        if (ui.runningSlots.size > 1) TextButton(onClick = vm::stopAll) { Text("Stop all") }
-                    }
+                    StartStopRow(ui, vm, be.connected)
                 }
             }
             item {
@@ -277,6 +275,51 @@ private fun PadRow(pad: Pad, ui: UiState, vm: AppViewModel) {
                 TextButton({ vm.clear(pad) }) { Text("Clear") }
                 if (pad.isAxis && !pad.isTrigger) TextButton({ vm.toggleInvert(pad) }) { Text("Invert") }
             }
+        }
+    }
+}
+
+/**
+ * The buttons Start, Stop and Stop all. A button is disabled when its action is not possible.
+ * A disabled button loses the focus, and the focus then moves to a distant button.
+ * After a click, the focus moves to the other button when the state of the pad changes:
+ * to Stop after Start, and to Start after Stop or Stop all.
+ */
+@Composable
+private fun StartStopRow(ui: UiState, vm: AppViewModel, connected: Boolean) {
+    val startFocus = remember { FocusRequester() }
+    val stopFocus = remember { FocusRequester() }
+    // Set by a click. true = the pad starts (focus Stop). false = the pad stops (focus Start).
+    var pending by remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(ui.runningSlots) {
+        val p = pending
+        if (p != null && p == ui.running) {
+            runCatching { (if (p) stopFocus else startFocus).requestFocus() }
+            pending = null
+        }
+    }
+    // A start or a stop that fails does not change the state. Forget the click after 5 seconds.
+    LaunchedEffect(pending) {
+        if (pending != null) {
+            delay(5_000)
+            pending = null
+        }
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(
+            onClick = { pending = true; vm.start() },
+            enabled = !ui.running && connected,
+            modifier = Modifier.focusRequester(startFocus),
+        ) { Text("Start pad ${ui.slot + 1}") }
+        OutlinedButton(
+            onClick = { pending = false; vm.stop() },
+            enabled = ui.running,
+            modifier = Modifier.focusRequester(stopFocus),
+        ) { Text("Stop") }
+        if (ui.runningSlots.size > 1) {
+            TextButton(onClick = { pending = false; vm.stopAll() }) { Text("Stop all") }
         }
     }
 }
