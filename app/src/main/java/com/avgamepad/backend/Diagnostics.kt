@@ -110,17 +110,19 @@ object Diagnostics {
     }
 
     // logcat -v time: "11-18 20:24:18.083 W/ShizukuServiceStarter(12850): text"
+    // logcat adds spaces after a short tag: "W/libc    (13112): text". The expression removes them.
     // Lines that the vendor framework writes when a process starts. They hide the useful lines.
     private val noiseTags = setOf(
         "TranWindowConfigurationImpl", "TranAssetManagerImpl", "TranInstanceHelper", "MtkSystemServiceRegistry",
         "SystemServiceRegistry", "AssetManager", "OverlayConfig", "FeatureFlagsImplExport", "LoadedApk",
         "Choreographer", "PhoneWindow", "WindowOnBackDispatcher",
+        "QT", "libMEOW_gift", "PowerHalWrapper", "GrallocExtra", "DisplayEventDispatcher",
     )
 
     private fun isNoise(tag: String, text: String) =
         tag in noiseTags || (tag == "libc" && text.startsWith("Access denied finding property"))
 
-    private val lineRe = Regex("""^\d\d-\d\d \d\d:\d\d:\d\d\.\d{3} ([VDIWEFA])/(.+?)\(\s*(\d+)\): ?(.*)$""")
+    private val lineRe = Regex("""^\d\d-\d\d \d\d:\d\d:\d\d\.\d{3} ([VDIWEFA])/(.+?)\s*\(\s*(\d+)\): ?(.*)$""")
 
     /**
      * Keeps the lines of the processes of this application: the UI process and the helper process.
