@@ -301,6 +301,8 @@ The mapping does not depend on the identity. When you select a different identit
 
 When you select a profile, the application sets the D-pad and L2/R2 columns of that profile. You can change them after that.
 
+**NOTE:** RetroArch treats pads that have the same vendor ID and product ID as one controller, even if the names are different. Select a different identity for each pad, for example Xbox 360 for Pad 1 and PlayStation 3 for Pad 2. The Generic identity changes its product ID for each pad by itself: `1209:0001` for Pad 1, `1209:0011` for Pad 2 and `1209:0021` for Pad 3.
+
 In the PlayStation profiles, the Android names of the face buttons are: A = Cross, B = Circle, X = Square, Y = Triangle. Select = Share (PS4) or Select (PS3), Start = Options (PS4) or Start (PS3), Mode = PS button.
 
 **NOTE:** The application does not simulate the touchpad, the motion sensors, the light bar or the rumble of the PlayStation gamepads.
@@ -340,8 +342,8 @@ Each pad starts and stops by itself. Select **Stop all** to stop all pads.
 | Rule | Description |
 |---|---|
 | One source for one pad | A source device can feed only one pad. The helper refuses to start a pad if another pad uses the same source device. |
-| Identity | Two pads can have the same identity, for example two Xbox 360 gamepads. Android gives each pad its own device ID. |
-| Name | Pad 2 and later get a number in the name (for example `Microsoft X-Box 360 pad #2`). Then each pad is a separate controller for the applications. Some applications, for example RetroArch, treat controllers that have the same name and ID as one controller. Pad 1 keeps the name of the identity. The Custom profile uses the name that you set, as it is. |
+| Identity | Two pads can have the same identity, for example two Xbox 360 gamepads. Android gives each pad its own device ID. Some applications, for example RetroArch, then see only one controller. Select a different identity for each pad (see section 6.3). |
+| Name | Pad 2 and later get a number in the name (for example `Microsoft X-Box 360 pad #2`). Pad 1 keeps the name of the identity. The Custom profile uses the name that you set, as it is. |
 | Output | Several pads need the virtual gamepad output, or an existing-device output with a different target device for each pad. Key injection cannot separate the pads. |
 | Dual-port adapters | A dual-port PS2 adapter usually shows two `/dev/input/eventX` nodes. Use one node for each pad. |
 

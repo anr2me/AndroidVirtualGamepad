@@ -324,7 +324,21 @@ data class EngineConfig(
         get() = if (custom) AxisLayout.entries.firstOrNull { it.name.equals(customAxes, true) } ?: AxisLayout.GENERIC
         else padProfile.axes
     val virtualVendor: Int get() = (if (custom) customVendor else padProfile.vendor) and 0xffff
-    val virtualProduct: Int get() = (if (custom) customProduct else padProfile.product) and 0xffff
+    /**
+     * The product ID of the virtual gamepad. RetroArch treats pads that have the same vendor ID and
+     * product ID as one controller, even if the names are different. The Generic identity has no key
+     * layout file, so its product ID can change: each pad after Pad 1 adds 16 to it. The other
+     * identities keep their IDs, because Android selects the key layout with them.
+     */
+    val virtualProduct: Int
+        get() {
+            val id = when {
+                custom -> customProduct
+                padProfile == PadProfile.GENERIC -> padProfile.product + slot * 0x10
+                else -> padProfile.product
+            }
+            return id and 0xffff
+        }
     /** The button codes that the key layout of the virtual identity expects. */
     val buttonLayout: ButtonLayout get() = ButtonLayout.of(virtualVendor, virtualProduct)
     /**
