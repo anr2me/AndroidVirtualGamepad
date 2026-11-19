@@ -287,6 +287,10 @@ enum class PadProfile(
     val triggerMode: String,       // recommended L2/R2 output for this identity
 ) {
     XBOX360("Xbox 360", 0x045e, 0x028e, "Microsoft X-Box 360 pad", AxisLayout.XBOX, true, "analog"),
+    // Android has a key layout file for each of these IDs (Android 11 and later). The three files
+    // have the same mapping, so a second and a third Xbox pad can have an ID of their own.
+    XBOX360_V2("Xbox 360 v2", 0x045e, 0x028f, "Microsoft X-Box 360 pad v2", AxisLayout.XBOX, true, "analog"),
+    XBOX360_WIRELESS("Xbox 360 wireless", 0x045e, 0x02a1, "Xbox 360 Wireless Controller", AxisLayout.XBOX, true, "analog"),
     PS3("PlayStation 3", 0x054c, 0x0268, "Sony PLAYSTATION(R)3 Controller", AxisLayout.PLAYSTATION3, false, "digital"),
     PS4("PlayStation 4", 0x054c, 0x09cc, "Wireless Controller", AxisLayout.PLAYSTATION, true, "both"),
     GENERIC("Generic", 0x1209, 0x0001, "Android Virtual Gamepad", AxisLayout.GENERIC, true, "analog"),

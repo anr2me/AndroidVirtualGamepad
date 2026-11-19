@@ -294,6 +294,8 @@ The mapping does not depend on the identity. When you select a different identit
 | Profile | ID | Name | Axes | D-pad | L2/R2 |
 |---|---|---|---|---|---|
 | Xbox 360 | `045e:028e` | Microsoft X-Box 360 pad | Right stick `ABS_RX`/`ABS_RY`, triggers `ABS_Z`/`ABS_RZ` | Hat | Analog |
+| Xbox 360 v2 | `045e:028f` | Microsoft X-Box 360 pad v2 | Same as Xbox 360 | Hat | Analog |
+| Xbox 360 wireless | `045e:02a1` | Xbox 360 Wireless Controller | Same as Xbox 360 | Hat | Analog |
 | PlayStation 3 | `054c:0268` | Sony PLAYSTATION(R)3 Controller | Right stick `ABS_Z`/`ABS_RZ`, triggers `0x30`/`0x31` | Buttons | Digital |
 | PlayStation 4 | `054c:09cc` | Wireless Controller | Right stick `ABS_Z`/`ABS_RZ`, triggers `ABS_RX`/`ABS_RY` | Hat | Both |
 | Generic | `1209:0001` | Android Virtual Gamepad | Right stick `ABS_Z`/`ABS_RZ`, triggers `ABS_BRAKE`/`ABS_GAS` | Hat | Analog |
@@ -301,7 +303,7 @@ The mapping does not depend on the identity. When you select a different identit
 
 When you select a profile, the application sets the D-pad and L2/R2 columns of that profile. You can change them after that.
 
-**NOTE:** RetroArch treats pads that have the same vendor ID and product ID as one controller, even if the names are different. Select a different identity for each pad, for example Xbox 360 for Pad 1 and PlayStation 3 for Pad 2. The Generic identity changes its product ID for each pad by itself: `1209:0001` for Pad 1, `1209:0011` for Pad 2 and `1209:0021` for Pad 3.
+**NOTE:** RetroArch treats pads that have the same vendor ID and product ID as one controller, even if the names are different. Select a different identity for each pad, for example Xbox 360 for Pad 1 and PlayStation 3 for Pad 2. For more than one Xbox-style pad, use Xbox 360, Xbox 360 v2 and Xbox 360 wireless. Android has a key layout file with the same mapping for these three IDs (Android 11 and later). The Generic identity changes its product ID for each pad by itself: `1209:0001` for Pad 1, `1209:0011` for Pad 2 and `1209:0021` for Pad 3.
 
 In the PlayStation profiles, the Android names of the face buttons are: A = Cross, B = Circle, X = Square, Y = Triangle. Select = Share (PS4) or Select (PS3), Start = Options (PS4) or Start (PS3), Mode = PS button.
 
