@@ -123,9 +123,16 @@ fun AppScreen(vm: AppViewModel) {
                 Section("Source device (input)") {
                     Text("Select the controller, for example the PS2 adapter.", style = MaterialTheme.typography.bodySmall)
                     ui.devices.filter { it.readable }.forEach { d ->
-                        DeviceRow(d, ui.config.sourcePath == d.path) { vm.selectSource(d) }
+                        val own = ui.configs.withIndex().firstOrNull { it.value.isVirtual(d) }
+                        DeviceRow(d, ui.config.sourcePath == d.path) { if (own == null) vm.selectSource(d) }
                         ui.configs.withIndex().firstOrNull { it.index != ui.slot && it.value.sourcePath == d.path }?.let {
                             Text("Selected by Pad ${it.index + 1}", style = MaterialTheme.typography.bodySmall)
+                        }
+                        own?.let {
+                            Text(
+                                "Identity of the virtual gamepad of Pad ${it.index + 1}. Not available as a source.",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
                         }
                     }
                     OutlinedButton(onClick = vm::refreshDevices, enabled = be.connected) { Text("Refresh list") }

@@ -347,6 +347,8 @@ Each pad starts and stops by itself. Select **Stop all** to stop all pads.
 
 **NOTE:** A real gamepad and a pad of this application can have the same identity. The application then does not use that real gamepad as a source device.
 
+The section **Source device** shows the text **Identity of the virtual gamepad of Pad N** below each device that has the identity of a virtual gamepad. You cannot select these devices.
+
 ### 6.5 Keyboard keys
 
 Use this function to send keyboard keys from the controller. For example, you can map the D-pad to the arrow keys, or a button to Enter or Esc.

@@ -338,6 +338,13 @@ data class EngineConfig(
     val triggerAxes: Boolean get() = triggerMode != "digital"
     val triggerButtons: Boolean get() = triggerMode != "analog"
 
+    /**
+     * True if the device has the name and the ID of the virtual gamepad of this pad.
+     * The helper never uses such a device as a source (see DeviceScanner.matches).
+     */
+    fun isVirtual(d: DeviceInfo): Boolean =
+        d.name == virtualName && d.vendor == virtualVendor && d.product == virtualProduct
+
     fun toJson(): JSONObject = JSONObject()
         .put("slot", slot).put("sourcePath", sourcePath).put("sourceName", sourceName)
         .put("sourceVendor", sourceVendor).put("sourceProduct", sourceProduct)
