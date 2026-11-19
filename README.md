@@ -341,7 +341,7 @@ Each pad starts and stops by itself. Select **Stop all** to stop all pads.
 |---|---|
 | One source for one pad | A source device can feed only one pad. The helper refuses to start a pad if another pad uses the same source device. |
 | Identity | Two pads can have the same identity, for example two Xbox 360 gamepads. Android gives each pad its own device ID. |
-| Name | The Generic and Custom profiles add a number to the name of Pad 2 and later (for example `Android Virtual Gamepad #2`). The Xbox 360, PlayStation 3 and PlayStation 4 profiles keep the name of the real gamepad. This helps applications that select a mapping by name. |
+| Name | Pad 2 and later get a number in the name (for example `Microsoft X-Box 360 pad #2`). Then each pad is a separate controller for the applications. Some applications, for example RetroArch, treat controllers that have the same name and ID as one controller. Pad 1 keeps the name of the identity. The Custom profile uses the name that you set, as it is. |
 | Output | Several pads need the virtual gamepad output, or an existing-device output with a different target device for each pad. Key injection cannot separate the pads. |
 | Dual-port adapters | A dual-port PS2 adapter usually shows two `/dev/input/eventX` nodes. Use one node for each pad. |
 

@@ -327,12 +327,15 @@ data class EngineConfig(
     val virtualProduct: Int get() = (if (custom) customProduct else padProfile.product) and 0xffff
     /** The button codes that the key layout of the virtual identity expects. */
     val buttonLayout: ButtonLayout get() = ButtonLayout.of(virtualVendor, virtualProduct)
-    /** Pad 2 and later get a number in the name when the name is ours (Generic, Custom). Real profile names stay as they are. */
+    /**
+     * The name of the virtual gamepad. Pad 2 and later get a number ("... #2"), so that each pad has
+     * its own name. Some applications (for example RetroArch) treat controllers that have the same
+     * name and ID as one controller. The Custom profile uses the name that the user sets, as it is.
+     */
     val virtualName: String
         get() {
-            val base = if (custom) customName.ifBlank { "Android Virtual Gamepad" } else padProfile.deviceName
-            val numbered = slot > 0 && (custom || padProfile == PadProfile.GENERIC)
-            return if (numbered) "$base #${slot + 1}" else base
+            if (custom) return customName.ifBlank { "Android Virtual Gamepad" }
+            return if (slot > 0) "${padProfile.deviceName} #${slot + 1}" else padProfile.deviceName
         }
 
     val triggerAxes: Boolean get() = triggerMode != "digital"
