@@ -29,7 +29,8 @@ fun DiagnosticsDialog(ui: UiState, vm: AppViewModel) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "The window shows only the lines of this application and of its helper process. " +
+                    "The window shows only the lines of this application and of its helper process, " +
+                        "and the virtual gamepads as Android sees them. " +
                         "Nothing leaves the device until you select Share.",
                     style = MaterialTheme.typography.bodySmall,
                 )

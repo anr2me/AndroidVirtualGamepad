@@ -95,7 +95,8 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
         if (_ui.value.diagBusy) return
         _ui.update { it.copy(diagBusy = true) }
         viewModelScope.launch {
-            val text = runCatching { Diagnostics.report() }.getOrElse { "Diagnostics failed: ${it.message}" }
+            val names = _ui.value.configs.map { it.virtualName }.toSet()
+            val text = runCatching { Diagnostics.report(names) }.getOrElse { "Diagnostics failed: ${it.message}" }
             _ui.update { it.copy(diagText = text, diagBusy = false) }
         }
     }

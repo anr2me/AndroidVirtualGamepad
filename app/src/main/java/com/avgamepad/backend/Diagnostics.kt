@@ -39,9 +39,13 @@ object Diagnostics {
         }
     }
 
-    /** Makes the text for the Diagnostics window. */
-    suspend fun report(): String = withContext(Dispatchers.IO) {
+    /**
+     * Makes the text for the Diagnostics window.
+     * [virtualNames] are the names of the virtual gamepads. The report shows how Android sees them.
+     */
+    suspend fun report(virtualNames: Set<String> = emptySet()): String = withContext(Dispatchers.IO) {
         val st = BackendManager.state.value
+        val devices = inputDevices(virtualNames)
         val log = readLog()
         buildString {
             appendLine("Android Virtual Gamepad ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
@@ -52,11 +56,80 @@ object Diagnostics {
             appendLine("Connection history")
             synchronized(history) { history.forEach { appendLine(it) } }
             appendLine()
+            appendLine("Virtual gamepads in Android")
+            devices.forEach { appendLine(it) }
+            appendLine()
             appendLine("Log (${log.source})")
             if (log.note.isNotEmpty()) appendLine(log.note)
             if (log.lines.isEmpty()) appendLine("No log lines found for this application.")
             else log.lines.forEach { appendLine(it) }
         }
+    }
+
+    /** Runs a command as the shell user (Shizuku) or as root. Returns null if neither is available. */
+    private fun runPrivileged(cmd: Array<String>): List<String>? {
+        val st = BackendManager.state.value
+        val shizuku = runCatching {
+            Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED
+        }.getOrDefault(false)
+        if (shizuku) runCatching { return viaShizuku(cmd) }
+        if (st.type == BackendType.ROOT && st.connected) runCatching { return Shell.cmd(cmd.joinToString(" ")).exec().out }
+        return null
+    }
+
+    // "dumpsys input" lists a device two times: "  Device 12: name" (input reader) and "    12: name" (event hub).
+    private val deviceRe = Regex("""^(\s*)(?:Device )?(-?\d+): (.*)$""")
+    private val keyLayoutRe = Regex("""^/[A-Za-z0-9_./-]+\.kl$""")
+    private val deviceFields = listOf(
+        "Classes:", "Path:", "Descriptor:", "ControllerNumber:", "Identifier:", "KeyLayoutFile:", "Sources:", "KeyboardType:",
+    )
+
+    /**
+     * Shows how Android sees the virtual gamepads: the device class, the ID, and the key layout file
+     * with its mapping. The key layout decides which Android key code a button gets.
+     */
+    private fun inputDevices(names: Set<String>): List<String> {
+        if (names.isEmpty()) return listOf("No virtual gamepad is set up.")
+        val out = runPrivileged(arrayOf("dumpsys", "input")) ?: return listOf("This needs Shizuku or Root.")
+        val result = ArrayList<String>()
+        val layouts = LinkedHashSet<String>()
+        val seen = HashSet<String>()
+        var i = 0
+        while (i < out.size) {
+            val m = deviceRe.find(out[i])
+            if (m == null || m.groupValues[3].trim() !in names) {
+                i++
+                continue
+            }
+            val indent = m.groupValues[1].length
+            val header = out[i].trim()
+            val keep = ArrayList<String>()
+            var j = i + 1
+            while (j < out.size && (out[j].isBlank() || out[j].takeWhile { it == ' ' }.length > indent)) {
+                val t = out[j].trim()
+                if (deviceFields.any { t.startsWith(it) }) keep += "  $t"
+                if (t.startsWith("KeyLayoutFile:")) layouts += t.substringAfter(':').trim()
+                j++
+            }
+            if (seen.add(header)) {
+                result += header
+                result += keep
+            }
+            i = j
+        }
+        if (result.isEmpty()) result += "Android has no device with the name of a virtual gamepad. Start the pads first."
+        for (path in layouts) {
+            result += ""
+            result += "Key layout $path"
+            if (!keyLayoutRe.matches(path)) {
+                result += "  (the path is not valid)"
+                continue
+            }
+            val lines = runPrivileged(arrayOf("cat", path))
+            if (lines == null) result += "  (not readable)"
+            else lines.map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }.forEach { result += "  $it" }
+        }
+        return result
     }
 
     private class LogResult(val source: String, val lines: List<String>, val note: String = "")

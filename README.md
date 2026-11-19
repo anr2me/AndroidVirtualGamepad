@@ -448,6 +448,8 @@ To see the log of the application and of its helper process, select **Diagnostic
 
 The window shows only the lines of this application. The log of the helper process needs Shizuku or Root. Without them, the window shows only the connection history and the lines of the UI process.
 
+The window also shows each virtual gamepad as Android sees it: the device class, the ID, and the key layout file with its mapping. This needs Shizuku or Root. Start the pads before you select **Diagnostics**.
+
 ## 10 Project structure
 
 ```
