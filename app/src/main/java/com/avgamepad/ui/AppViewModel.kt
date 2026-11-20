@@ -41,6 +41,7 @@ data class UiState(
     val diagOpen: Boolean = false,
     val diagBusy: Boolean = false,
     val diagText: String = "",
+    val testOpen: Boolean = false,
 ) {
     val config: EngineConfig get() = configs[slot.coerceIn(0, configs.size - 1)]
     val running: Boolean get() = slot in runningSlots
@@ -90,6 +91,10 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     fun closeDiagnostics() = _ui.update { it.copy(diagOpen = false) }
+
+    fun openInputTest() = _ui.update { it.copy(testOpen = true) }
+
+    fun closeInputTest() = _ui.update { it.copy(testOpen = false) }
 
     fun refreshDiagnostics() {
         if (_ui.value.diagBusy) return

@@ -450,6 +450,8 @@ The window shows only the lines of this application. The log of the helper proce
 
 The window also shows each virtual gamepad as Android sees it: the device class, the ID, and the key layout file with its mapping. This needs Shizuku or Root. Start the pads before you select **Diagnostics**.
 
+To check what an application receives from a virtual gamepad, select **Input test** in the section **Access mode**. Press a button on the controller. The window shows the key that Android gives to the application, the scan code that the device sent, and the device name.
+
 ## 10 Project structure
 
 ```
