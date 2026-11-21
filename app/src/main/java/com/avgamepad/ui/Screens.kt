@@ -324,6 +324,7 @@ private fun KeyAssignmentSummary(ui: UiState, vm: AppViewModel) {
  * The window "Key assignment" of the selected pad. It has the gamepad controls (not for the output
  * "Keyboard only") and the keyboard keys. These lists are not in the main window.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun KeyAssignmentDialog(ui: UiState, vm: AppViewModel) {
     val c = ui.config
@@ -364,7 +365,10 @@ private fun KeyAssignmentDialog(ui: UiState, vm: AppViewModel) {
                 if (c.sendsGamepad) {
                     item {
                         Section("Gamepad controls") {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
                                 OutlinedButton({ vm.preset("passthrough") }) { Text("Preset: standard / Xbox 360 example") }
                                 OutlinedButton({ vm.preset("ps2") }) { Text("Preset: PS2 example") }
                             }
