@@ -336,10 +336,15 @@ private fun KeyAssignmentDialog(ui: UiState, vm: AppViewModel) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    // A FlowRow moves the button Close to the next line when the title is too long.
+                    FlowRow(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         Text(
                             "Key assignment (Pad ${ui.slot + 1})",
-                            Modifier.weight(1f),
+                            Modifier.padding(end = 12.dp),
                             style = MaterialTheme.typography.headlineSmall,
                         )
                         Button(vm::closeKeys) { Text("Close") }
