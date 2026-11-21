@@ -365,7 +365,7 @@ private fun KeyAssignmentDialog(ui: UiState, vm: AppViewModel) {
                     item {
                         Section("Gamepad controls") {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton({ vm.preset("passthrough") }) { Text("Preset: standard") }
+                                OutlinedButton({ vm.preset("passthrough") }) { Text("Preset: standard / Xbox 360 example") }
                                 OutlinedButton({ vm.preset("ps2") }) { Text("Preset: PS2 example") }
                             }
                             Text(

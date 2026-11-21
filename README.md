@@ -275,7 +275,7 @@ Each control shows its Xbox name and its PlayStation name, for example **A (Cros
 
 1. In the section **Virtual gamepads**, select the pad.
 2. In the section **Key assignment**, select **Open key assignment**. The window **Key assignment** opens.
-3. Select a preset: **standard** (the source uses standard Linux gamepad codes) or **PS2 example** (a typical layout of PS2 adapters).
+3. Select a preset: **standard / Xbox 360 example** (the source uses standard Linux gamepad codes, as an Xbox 360 controller does) or **PS2 example** (a typical layout of PS2 adapters).
 4. For each virtual control, select **Assign**.
 5. Press the button or move the stick on the source device in the next 8 seconds.
 6. Examine the name that shows below the control, for example `BTN_SOUTH`.
@@ -283,6 +283,8 @@ Each control shows its Xbox name and its PlayStation name, for example **A (Cros
 8. To close the window, select **Close** or push the Back button.
 
 **NOTE:** The layout of the buttons is different for each PS2 adapter. The preset **PS2 example** is a start point. Use **Assign** to make it correct for your adapter.
+
+**NOTE:** The preset **standard / Xbox 360 example** matches all controls of an Xbox 360 controller that uses the Linux driver `xpad` (for example, on USB). A controller that uses a different driver, for example a Bluetooth controller, can send different codes. Use **Assign** for each control that does not match.
 
 **NOTE:** The button **Assign** does not operate while the remapper operates. Select **Stop pad N** in the window **Key assignment**, or close the window and select **Stop**.
 
