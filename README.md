@@ -18,7 +18,7 @@ The application has these outputs:
 
 | Output | Description |
 |---|---|
-| Virtual gamepad | The application creates a new gamepad through `/dev/uinput`. The gamepad has the buttons A, B, X, Y, L1, R1, Select, Start, Mode, the stick buttons and the D-pad. It has two analog sticks. L2 and R2 are analog triggers, digital buttons or both (see section 6.3). The gamepad can have the identity of an Xbox 360, PlayStation 3 or PlayStation 4 gamepad, or a custom identity. |
+| Virtual gamepad | The application creates a new gamepad through `/dev/uinput`. The gamepad has the buttons A, B, X, Y, L1, R1, Select, Start, Mode, the stick buttons and the D-pad. It has two analog sticks. L2 and R2 are analog triggers, digital buttons or both (see section 6.3). The gamepad can have the identity of an Xbox 360, Xbox One, PlayStation 3 or PlayStation 4 gamepad, or a custom identity. |
 | Existing device | You select an existing input device. The application writes the events to its `/dev/input/eventX` node. |
 | Key injection | The application sends Android key events and joystick events to the focused application. |
 | Keyboard keys | The application sends keyboard keys (letters, digits, arrows, Enter, Esc, function keys and others) when you press a controller button. This output is separate from the gamepad output. You can use both at the same time, or use only the keyboard keys (see section 6.5). |
@@ -192,7 +192,7 @@ In the GitHub workflow **Build APK**, set **Add Accessibility mode** to true. Th
 4. Give root access to the application when the root manager asks.
 5. Wait for the message **Connected. Helper runs as root.**
 6. In the section **Source device**, select the controller.
-7. Set the mapping (see section 6).
+7. Assign the controls (see section 6).
 8. Select **Start**.
 
 ### 5.2 Shizuku mode
@@ -267,17 +267,26 @@ A mapping is a list of rules. Each rule connects one source control to one virtu
 
 If more than one rule connects to the same control, a button is pressed when any rule is active. For an axis, the values are added.
 
-### 6.2 Set a mapping
+### 6.2 Assign the controls
 
-1. Select a preset: **standard** (the source uses standard Linux gamepad codes) or **PS2 example** (a typical layout of PS2 adapters).
-2. For each virtual control, select **Learn**.
-3. Press the button or move the stick on the source device in the next 8 seconds.
-4. Examine the name that shows below the control, for example `BTN_SOUTH`.
-5. Select **Invert** for a stick if the direction is not correct.
+The window **Key assignment** has the list of controls and the keyboard keys. The main window shows only a summary. This keeps the main window short.
 
-**NOTE:** The layout of the buttons is different for each PS2 adapter. The preset **PS2 example** is a start point. Use **Learn** to make it correct for your adapter.
+Each control shows its Xbox name and its PlayStation name, for example **A (Cross)** or **Start / Menu / Options**. Use the name of the button on your controller.
 
-**NOTE:** Learn does not operate while the remapper operates. Select **Stop** first.
+1. In the section **Virtual gamepads**, select the pad.
+2. In the section **Key assignment**, select **Open key assignment**. The window **Key assignment** opens.
+3. Select a preset: **standard** (the source uses standard Linux gamepad codes) or **PS2 example** (a typical layout of PS2 adapters).
+4. For each virtual control, select **Assign**.
+5. Press the button or move the stick on the source device in the next 8 seconds.
+6. Examine the name that shows below the control, for example `BTN_SOUTH`.
+7. Select **Invert** for a stick if the direction is not correct.
+8. To close the window, select **Close** or push the Back button.
+
+**NOTE:** The layout of the buttons is different for each PS2 adapter. The preset **PS2 example** is a start point. Use **Assign** to make it correct for your adapter.
+
+**NOTE:** The button **Assign** does not operate while the remapper operates. Select **Stop pad N** in the window **Key assignment**, or close the window and select **Stop**.
+
+**NOTE:** If the output is **Keyboard only**, the window does not show the gamepad controls. In this mode, the pad does not send gamepad events (see section 6.3).
 
 Changes to the rules apply immediately when the remapper operates. Changes to the output need a **Stop** and a **Start**.
 
@@ -289,13 +298,14 @@ Android selects the key layout of a gamepad from its vendor ID and product ID. A
 
 The application sends the button codes that this key layout expects. The PlayStation 3 and PlayStation 4 identities use button codes that are different from the Xbox 360 codes.
 
-The mapping does not depend on the identity. When you select a different identity, you do not need to use **Learn** again.
+The mapping does not depend on the identity. When you select a different identity, you do not need to use **Assign** again.
 
 | Profile | ID | Name | Axes | D-pad | L2/R2 |
 |---|---|---|---|---|---|
 | Xbox 360 | `045e:028e` | Microsoft X-Box 360 pad | Right stick `ABS_RX`/`ABS_RY`, triggers `ABS_Z`/`ABS_RZ` | Hat | Analog |
 | Xbox 360 v2 | `045e:028f` | Microsoft X-Box 360 pad v2 | Same as Xbox 360 | Hat | Analog |
 | Xbox 360 wireless | `045e:02a1` | Xbox 360 Wireless Controller | Same as Xbox 360 | Hat | Analog |
+| Xbox One | `045e:02d1` | Microsoft X-Box One pad | Same as Xbox 360 | Hat | Analog |
 | PlayStation 3 | `054c:0268` | Sony PLAYSTATION(R)3 Controller | Right stick `ABS_Z`/`ABS_RZ`, triggers `0x30`/`0x31` | Buttons | Digital |
 | PlayStation 4 | `054c:09cc` | Wireless Controller | Right stick `ABS_Z`/`ABS_RZ`, triggers `ABS_RX`/`ABS_RY` | Hat | Both |
 | Generic | `1209:0001` | Android Virtual Gamepad | Right stick `ABS_Z`/`ABS_RZ`, triggers `ABS_BRAKE`/`ABS_GAS` | Hat | Analog |
@@ -303,7 +313,7 @@ The mapping does not depend on the identity. When you select a different identit
 
 When you select a profile, the application sets the D-pad and L2/R2 columns of that profile. You can change them after that.
 
-**NOTE:** RetroArch treats pads that have the same vendor ID and product ID as one controller, even if the names are different. Select a different identity for each pad, for example Xbox 360 for Pad 1 and PlayStation 3 for Pad 2. For more than one Xbox-style pad, use Xbox 360, Xbox 360 v2 and Xbox 360 wireless. Android has a key layout file with the same mapping for these three IDs (Android 11 and later). The Generic identity changes its product ID for each pad by itself: `1209:0001` for Pad 1, `1209:0011` for Pad 2 and `1209:0021` for Pad 3.
+**NOTE:** RetroArch treats pads that have the same vendor ID and product ID as one controller, even if the names are different. Select a different identity for each pad, for example Xbox 360 for Pad 1 and PlayStation 3 for Pad 2. For more than one Xbox-style pad, use Xbox 360, Xbox 360 v2, Xbox 360 wireless and Xbox One. Android has a key layout file with the same mapping for the three Xbox 360 IDs (Android 11 and later) and for the Xbox One ID. The Generic identity changes its product ID for each pad by itself: `1209:0001` for Pad 1, `1209:0011` for Pad 2 and `1209:0021` for Pad 3.
 
 In the PlayStation profiles, the Android names of the face buttons are: A = Cross, B = Circle, X = Square, Y = Triangle. Select = Share (PS4) or Select (PS3), Start = Options (PS4) or Start (PS3), Mode = PS button.
 
@@ -323,13 +333,29 @@ In the PlayStation profiles, the Android names of the face buttons are: A = Cros
 | Digital buttons | L2 and R2 are buttons. The identity gives the button codes (`BTN_TL2` and `BTN_TR2` for Xbox 360 and Generic). The virtual gamepad has no trigger axes. The button is pressed at 50 percent of the trigger range. |
 | Both | The virtual gamepad has trigger axes and buttons. A real PlayStation 4 gamepad does this. Some applications use both and can react two times. |
 
-**NOTE:** The key layout of Android for the Xbox 360 identity can ignore the L2/R2 buttons. For digital L2/R2, use a PlayStation profile or the Generic profile.
+**NOTE:** The key layout of Android for the Xbox 360 and Xbox One identities can ignore the L2/R2 buttons. For digital L2/R2, use a PlayStation profile or the Generic profile.
+
+#### Settings for each output
+
+The application shows only the settings that the selected output uses. It hides the other settings. The application keeps the values of the hidden settings. They show again when you select a different output.
+
+| Output | Settings that show |
+|---|---|
+| Auto | Identity, L2/R2 output, rumble, D-pad as hat axis, existing device |
+| Virtual gamepad | Identity, L2/R2 output, rumble, D-pad as hat axis |
+| Existing device | Identity, L2/R2 output, D-pad as hat axis, existing device |
+| Key injection | L2/R2 output |
+| Keyboard only | None |
+
+The fields **Vendor ID (hex)**, **Product ID (hex)**, **Device name** and **Axis layout** show only when you select the identity **Custom**. The window **Key assignment** shows the gamepad controls only if the output sends gamepad events. The output **Keyboard only** does not.
+
+**NOTE:** With the output **Existing device**, the identity sets only the button codes and the axes. The device keeps its own ID and name.
 
 #### Other settings
 
 | Setting | Description |
 |---|---|
-| D-pad as hat axis | The D-pad uses the axes `ABS_HAT0X` and `ABS_HAT0Y`. If you disable this setting, the D-pad uses buttons. The Xbox 360 and Generic identities use `BTN_DPAD_UP`, `BTN_DPAD_DOWN`, `BTN_DPAD_LEFT` and `BTN_DPAD_RIGHT`. The PlayStation 3 identity uses the codes `0x124` to `0x127`. The key layout of the PlayStation 4 identity has no D-pad buttons. Enable this setting for the PlayStation 4 identity. |
+| D-pad as hat axis | The D-pad uses the axes `ABS_HAT0X` and `ABS_HAT0Y`. If you disable this setting, the D-pad uses buttons. The Xbox 360, Xbox One and Generic identities use `BTN_DPAD_UP`, `BTN_DPAD_DOWN`, `BTN_DPAD_LEFT` and `BTN_DPAD_RIGHT`. The PlayStation 3 identity uses the codes `0x124` to `0x127`. The key layout of the PlayStation 4 identity has no D-pad buttons. Enable this setting for the PlayStation 4 identity. |
 | Grab source | The application takes sole control of the source device (`EVIOCGRAB`). The original events do not go to Android. Keep this setting enabled to prevent double input. |
 
 ### 6.4 Use more than one pad
@@ -358,10 +384,12 @@ The section **Source device** shows the text **Identity of the virtual gamepad o
 Use this function to send keyboard keys from the controller. For example, you can map the D-pad to the arrow keys, or a button to Enter or Esc.
 
 1. Select the pad in the section **Virtual gamepads**.
-2. In the section **Keyboard keys**, select **Add key mapping**.
-3. Press a button or move a stick on the source device in the next 8 seconds.
-4. Select the key from the list. Select a group (for example Letters or Arrows) to see the keys.
-5. Select **Start**.
+2. In the section **Key assignment**, select **Open key assignment**.
+3. In the section **Keyboard keys** of the window, select **Add key mapping**.
+4. Press a button or move a stick on the source device in the next 8 seconds.
+5. Select the key from the list. Select a group (for example Letters or Arrows) to see the keys.
+6. Select **Close**.
+7. Select **Start**.
 
 You can map one source control to more than one key. You can map more than one source control to the same key. To send a key combination, map the modifier key (Left Shift, Left Ctrl, Left Alt, Left Meta) to a separate source control.
 
@@ -434,7 +462,8 @@ The application opens the source device for reading and writing, and it uses the
 | The message says `... is already used by pad N` | Two pads use the same source device | Select a different source device for one of the pads. |
 | Each press shows twice in a game | The original events and the remapped events both reach the game | Enable **Grab source**. |
 | A stick moves in the wrong direction | The axis polarity is different | Select **Invert** for that stick. |
-| The D-pad does not operate | The adapter reports the D-pad as `ABS_X` and `ABS_Y` | Use **Learn** for each D-pad direction and move the D-pad. |
+| The D-pad does not operate | The adapter reports the D-pad as `ABS_X` and `ABS_Y` | Use **Assign** for each D-pad direction and move the D-pad. |
+| A setting is not on the screen | The selected output does not use the setting | Select another output. Refer to the table in section 6.3. |
 | The game does not rumble | The game does not use the Android vibration API, or the output is not the virtual gamepad | Use the output **Virtual gamepad**. Set **Rumble** to **Controller**, **Phone** or **Both**. |
 | The status shows `controller not supported` | The source device has no rumble, or the helper cannot write to it | Use **Phone**, or use Root mode. |
 | The on-screen keyboard does not show | The virtual keyboard is active | Select **Key injection** for the keyboard keys, or stop the pad. |

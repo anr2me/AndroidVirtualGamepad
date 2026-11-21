@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.avgamepad.accessibility.AccessibilityState
 import com.avgamepad.backend.BackendManager
@@ -152,56 +154,72 @@ fun AppScreen(vm: AppViewModel) {
                                 FilterChip(ui.config.outputMode == k, { vm.edit { c -> c.copy(outputMode = k) } }, { Text(t) })
                             }
                     }
-                    Text(
+                    if (ui.config.outputMode == "auto") Text(
                         "Auto tries: virtual gamepad, then the selected existing device, then key injection.",
                         style = MaterialTheme.typography.bodySmall,
                     )
-                    Text("Virtual gamepad identity:", fontWeight = FontWeight.Bold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PadProfile.entries.forEach { pr ->
-                            FilterChip(ui.config.padProfile == pr, { vm.selectProfile(pr) }, { Text(pr.title) })
+                    // Show only the settings that the selected output uses.
+                    if (ui.config.usesIdentity) {
+                        Text("Virtual gamepad identity:", fontWeight = FontWeight.Bold)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            PadProfile.entries.forEach { pr ->
+                                FilterChip(ui.config.padProfile == pr, { vm.selectProfile(pr) }, { Text(pr.title) })
+                            }
+                        }
+                        if (ui.config.createsVirtualGamepad) {
+                            Text(
+                                "ID %04x:%04x, name \"%s\", %s axes".format(
+                                    ui.config.virtualVendor, ui.config.virtualProduct,
+                                    ui.config.virtualName, ui.config.axisLayout.title,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        } else {
+                            Text(
+                                "The identity sets the button codes and the axes. The device keeps its own ID and name.",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        if (ui.config.padProfile == PadProfile.CUSTOM) CustomProfileFields(ui.config, vm)
+                    }
+                    if (ui.config.sendsGamepad) {
+                        Text("L2 / R2 output:", fontWeight = FontWeight.Bold)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("analog" to "Analog axes", "digital" to "Digital buttons", "both" to "Both")
+                                .forEach { (k, t) ->
+                                    FilterChip(ui.config.triggerMode == k, { vm.edit { c -> c.copy(triggerMode = k) } }, { Text(t) })
+                                }
                         }
                     }
-                    Text(
-                        "ID %04x:%04x, name \"%s\", %s axes".format(
-                            ui.config.virtualVendor, ui.config.virtualProduct,
-                            ui.config.virtualName, ui.config.axisLayout.title,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    if (ui.config.padProfile == PadProfile.CUSTOM) CustomProfileFields(ui.config, vm)
-
-                    Text("L2 / R2 output:", fontWeight = FontWeight.Bold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("analog" to "Analog axes", "digital" to "Digital buttons", "both" to "Both")
-                            .forEach { (k, t) ->
-                                FilterChip(ui.config.triggerMode == k, { vm.edit { c -> c.copy(triggerMode = k) } }, { Text(t) })
-                            }
-                    }
-                    Text("Rumble:", fontWeight = FontWeight.Bold)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("off" to "Off", "controller" to "Controller", "phone" to "Phone", "both" to "Both")
-                            .forEach { (k, t) ->
-                                FilterChip(ui.config.rumble == k, { vm.edit { c -> c.copy(rumble = k) } }, { Text(t) })
-                            }
-                    }
-                    Text(
-                        "Rumble needs the virtual gamepad output. The real controller must support rumble and allow writing. The phone uses its vibrator.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    if (ui.config.triggerButtons && ui.config.padProfile == PadProfile.XBOX360) {
+                    if (ui.config.createsVirtualGamepad) {
+                        Text("Rumble:", fontWeight = FontWeight.Bold)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("off" to "Off", "controller" to "Controller", "phone" to "Phone", "both" to "Both")
+                                .forEach { (k, t) ->
+                                    FilterChip(ui.config.rumble == k, { vm.edit { c -> c.copy(rumble = k) } }, { Text(t) })
+                                }
+                        }
                         Text(
-                            "The Xbox 360 key layout of Android can ignore the L2/R2 buttons. Use PlayStation or Generic for digital L2/R2.",
+                            "Rumble needs the virtual gamepad output. The real controller must support rumble and allow writing. The phone uses its vibrator.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    val xboxLayout = ui.config.padProfile == PadProfile.XBOX360 || ui.config.padProfile == PadProfile.XBOX_ONE
+                    if (ui.config.createsVirtualGamepad && ui.config.triggerButtons && xboxLayout) {
+                        Text(
+                            "The Xbox key layout of Android can ignore the L2/R2 buttons. Use PlayStation or Generic for digital L2/R2.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
                     }
-                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                        Switch(ui.config.dpadAsHat, { v -> vm.edit { it.copy(dpadAsHat = v) } })
-                        Spacer(Modifier.width(8.dp))
-                        Text("D-pad as hat axis (off = D-pad buttons)")
+                    if (ui.config.usesIdentity) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Switch(ui.config.dpadAsHat, { v -> vm.edit { it.copy(dpadAsHat = v) } })
+                            Spacer(Modifier.width(8.dp))
+                            Text("D-pad as hat axis (off = D-pad buttons)")
+                        }
                     }
-                    if (ui.config.outputMode == "auto" || ui.config.outputMode == "device") {
+                    if (ui.config.usesTarget) {
                         Text("Existing device to use as output:", fontWeight = FontWeight.Bold)
                         DeviceRowNone(ui.config.targetPath.isBlank()) { vm.selectTarget(null) }
                         ui.devices.filter { it.writable && it.path != ui.config.sourcePath }.forEach { d ->
@@ -211,24 +229,12 @@ fun AppScreen(vm: AppViewModel) {
                     Text("Output changes apply after Stop and Start.", style = MaterialTheme.typography.bodySmall)
                 }
             }
-            item { KeyboardSection(ui, vm) }
-            item {
-                Section("Mapping") {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton({ vm.preset("passthrough") }) { Text("Preset: standard") }
-                        OutlinedButton({ vm.preset("ps2") }) { Text("Preset: PS2 example") }
-                    }
-                    Text(
-                        "For each control, tap Learn. Then press the button or move the stick on the source device. Stop the remapper first.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            }
-            items(Pad.entries.toList()) { pad -> PadRow(pad, ui, vm) }
+            item { KeyAssignmentSummary(ui, vm) }
         }
     }
 
     ui.editing?.let { AccDialog(it, vm) }
+    if (ui.keysOpen && ui.backend != BackendType.ACCESSIBILITY) KeyAssignmentDialog(ui, vm)
     if (ui.kbdPendingSrc != null || ui.kbdEditIndex != null) KeyPickerDialog(vm)
     if (ui.diagOpen) DiagnosticsDialog(ui, vm)
     if (ui.testOpen) InputTestDialog(vm)
@@ -279,14 +285,105 @@ private fun PadRow(pad: Pad, ui: UiState, vm: AppViewModel) {
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // The Learn button of the control that learns stays enabled. A disabled
+                // The Assign button of the control that waits for an input stays enabled. A disabled
                 // button loses the focus, and the focus then moves to a distant button.
                 OutlinedButton(
                     { if (ui.learning == null) vm.learn(pad) },
                     enabled = !ui.running && (ui.learning == null || ui.learning == pad),
-                ) { Text("Learn") }
+                ) { Text("Assign") }
                 TextButton({ vm.clear(pad) }) { Text("Clear") }
                 if (pad.isAxis && !pad.isTrigger) TextButton({ vm.toggleInvert(pad) }) { Text("Invert") }
+            }
+        }
+    }
+}
+
+/**
+ * The main window shows only a summary of the key assignment. This keeps the main window short.
+ * The window "Key assignment" (see [KeyAssignmentDialog]) has the controls and the keyboard keys.
+ */
+@Composable
+private fun KeyAssignmentSummary(ui: UiState, vm: AppViewModel) {
+    val c = ui.config
+    Section("Key assignment (Pad ${ui.slot + 1})") {
+        val keys = "Keyboard keys: ${c.kbdRules.size}."
+        Text(
+            if (c.sendsGamepad) {
+                val done = Pad.entries.count { p -> c.rules.any { it.dst == p } }
+                "Gamepad controls assigned: $done of ${Pad.entries.size}. $keys"
+            } else {
+                keys
+            },
+            style = MaterialTheme.typography.bodySmall,
+        )
+        Button(vm::openKeys) { Text("Open key assignment") }
+    }
+}
+
+/**
+ * The window "Key assignment" of the selected pad. It has the gamepad controls (not for the output
+ * "Keyboard only") and the keyboard keys. These lists are not in the main window.
+ */
+@Composable
+private fun KeyAssignmentDialog(ui: UiState, vm: AppViewModel) {
+    val c = ui.config
+    Dialog(onDismissRequest = vm::closeKeys, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        Text(
+                            "Key assignment (Pad ${ui.slot + 1})",
+                            Modifier.weight(1f),
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                        Button(vm::closeKeys) { Text("Close") }
+                    }
+                }
+                item {
+                    Section("Source device") {
+                        Text(
+                            if (c.sourcePath.isBlank()) "None. Select the source device in the main window."
+                            else c.sourceName.ifBlank { c.sourcePath },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        if (ui.running) {
+                            Text(
+                                "Pad ${ui.slot + 1} operates. Stop it before you assign a key.",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            OutlinedButton(vm::stop) { Text("Stop pad ${ui.slot + 1}") }
+                        }
+                        if (ui.log.isNotBlank()) Text(ui.log, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                if (c.sendsGamepad) {
+                    item {
+                        Section("Gamepad controls") {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton({ vm.preset("passthrough") }) { Text("Preset: standard") }
+                                OutlinedButton({ vm.preset("ps2") }) { Text("Preset: PS2 example") }
+                            }
+                            Text(
+                                "For each control, tap Assign. Then press the button or move the stick on the source device.",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                    items(Pad.entries.toList()) { pad -> PadRow(pad, ui, vm) }
+                } else {
+                    item {
+                        Text(
+                            "The output Keyboard only does not use the gamepad controls.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+                item { KeyboardSection(ui, vm) }
             }
         }
     }

@@ -42,6 +42,7 @@ data class UiState(
     val diagBusy: Boolean = false,
     val diagText: String = "",
     val testOpen: Boolean = false,
+    val keysOpen: Boolean = false,
 ) {
     val config: EngineConfig get() = configs[slot.coerceIn(0, configs.size - 1)]
     val running: Boolean get() = slot in runningSlots
@@ -95,6 +96,10 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
     fun openInputTest() = _ui.update { it.copy(testOpen = true) }
 
     fun closeInputTest() = _ui.update { it.copy(testOpen = false) }
+
+    fun openKeys() = _ui.update { it.copy(keysOpen = true) }
+
+    fun closeKeys() = _ui.update { it.copy(keysOpen = false) }
 
     fun refreshDiagnostics() {
         if (_ui.value.diagBusy) return
@@ -198,7 +203,7 @@ class AppViewModel(private val app: Application) : AndroidViewModel(app) {
         val st = _ui.value
         val slot = st.slot
         val c = st.config
-        if (st.running) { log("Stop this pad before you use Learn."); return }
+        if (st.running) { log("Stop this pad before you assign a key."); return }
         if (c.sourcePath.isBlank()) { log("Select a source device first."); return }
         viewModelScope.launch {
             _ui.update { it.copy(learning = pad, log = "") }

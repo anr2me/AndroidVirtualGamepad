@@ -16,14 +16,15 @@ enum class BackendType(val title: String) {
 
 /** Logical controls of the virtual gamepad. */
 enum class Pad(val label: String, val isAxis: Boolean = false) {
-    A("A"), B("B"), X("X"), Y("Y"),
+    // The label has the Xbox name and the PlayStation name of the control.
+    A("A (Cross)"), B("B (Circle)"), X("X (Square)"), Y("Y (Triangle)"),
     L1("L1 / LB"), R1("R1 / RB"),
-    SELECT("Select / Back"), START("Start"), MODE("Mode / Guide"),
-    THUMBL("Left stick click"), THUMBR("Right stick click"),
+    SELECT("Select / Back / View / Share"), START("Start / Menu / Options"), MODE("Mode / Guide / PS"),
+    THUMBL("Left stick click (L3)"), THUMBR("Right stick click (R3)"),
     DPAD_UP("D-pad up"), DPAD_DOWN("D-pad down"), DPAD_LEFT("D-pad left"), DPAD_RIGHT("D-pad right"),
     LX("Left stick X", true), LY("Left stick Y", true),
     RX("Right stick X", true), RY("Right stick Y", true),
-    LT("L2 / Left trigger", true), RT("R2 / Right trigger", true);
+    LT("L2 / LT (Left trigger)", true), RT("R2 / RT (Right trigger)", true);
 
     val isDpad: Boolean
         get() = this == DPAD_UP || this == DPAD_DOWN || this == DPAD_LEFT || this == DPAD_RIGHT
@@ -263,7 +264,7 @@ object Presets {
         r("ABS:2", Pad.LT), r("ABS:5", Pad.RT),
     ) + dpadHat()
 
-    /** Example for common PS2-to-USB adapters. Layouts differ. Use Learn to correct it. */
+    /** Example for common PS2-to-USB adapters. Layouts differ. Use Assign to correct it. */
     fun ps2Example() = listOf(
         r("KEY:288", Pad.Y), r("KEY:289", Pad.B), r("KEY:290", Pad.A), r("KEY:291", Pad.X),
         r("KEY:292", Pad.LT), r("KEY:293", Pad.RT), r("KEY:294", Pad.L1), r("KEY:295", Pad.R1),
@@ -291,6 +292,9 @@ enum class PadProfile(
     // have the same mapping, so a second and a third Xbox pad can have an ID of their own.
     XBOX360_V2("Xbox 360 v2", 0x045e, 0x028f, "Microsoft X-Box 360 pad v2", AxisLayout.XBOX, true, "analog"),
     XBOX360_WIRELESS("Xbox 360 wireless", 0x045e, 0x02a1, "Xbox 360 Wireless Controller", AxisLayout.XBOX, true, "analog"),
+    // Android has a key layout file for this ID too (Vendor_045e_Product_02d1.kl). It has the same
+    // axes and button codes as the Xbox 360 files.
+    XBOX_ONE("Xbox One", 0x045e, 0x02d1, "Microsoft X-Box One pad", AxisLayout.XBOX, true, "analog"),
     PS3("PlayStation 3", 0x054c, 0x0268, "Sony PLAYSTATION(R)3 Controller", AxisLayout.PLAYSTATION3, false, "digital"),
     PS4("PlayStation 4", 0x054c, 0x09cc, "Wireless Controller", AxisLayout.PLAYSTATION, true, "both"),
     GENERIC("Generic", 0x1209, 0x0001, "Android Virtual Gamepad", AxisLayout.GENERIC, true, "analog"),
@@ -358,6 +362,16 @@ data class EngineConfig(
 
     val triggerAxes: Boolean get() = triggerMode != "digital"
     val triggerButtons: Boolean get() = triggerMode != "analog"
+
+    // The settings that the selected output uses. The UI hides the other settings.
+    /** True if the output sends gamepad events. Only the output "keyboard" does not. */
+    val sendsGamepad: Boolean get() = outputMode != "keyboard"
+    /** True if the output uses the identity (the button codes and the axes). Key injection does not. */
+    val usesIdentity: Boolean get() = outputMode != "keyboard" && outputMode != "inject"
+    /** True if the output can create a virtual gamepad. Only this output has the ID, the name and the rumble. */
+    val createsVirtualGamepad: Boolean get() = outputMode == "auto" || outputMode == "uinput"
+    /** True if the output can write to an existing device. */
+    val usesTarget: Boolean get() = outputMode == "auto" || outputMode == "device"
 
     /**
      * True if the device has the name and the ID of the virtual gamepad of this pad.
